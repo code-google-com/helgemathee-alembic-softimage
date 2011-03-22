@@ -531,7 +531,7 @@ MStatus AbcExport::doIt(const MArgList & args)
                 for (; offset != offsetEnd; ++offset)
                 {
                     double curVal = curSamp + (*offset);
-                    double rndVal = roundf(curVal);
+                    double rndVal = curVal>0 ? int(curVal+0.5) : int(curVal-0.5);
 
                     // if the value is close enough to the integer value
                     // insert the integer value
@@ -661,9 +661,13 @@ MStatus AbcExport::doIt(const MArgList & args)
     return MS::kSuccess;
 }
 
+#ifdef PLATFORM_WINDOWS
+  #define MLL_EXPORT __declspec(dllexport)
+#else
+  #define MLL_EXPORT
+#endif
 
-
-MStatus initializePlugin(MObject obj)
+MLL_EXPORT MStatus initializePlugin(MObject obj)
 {
     MStatus status;
     MFnPlugin plugin(obj, "Alembic", "1.0", "Any");
@@ -681,7 +685,7 @@ MStatus initializePlugin(MObject obj)
     return status;
 }
 
-MStatus uninitializePlugin(MObject obj)
+MLL_EXPORT MStatus uninitializePlugin(MObject obj)
 {
     MStatus status;
     MFnPlugin plugin(obj);

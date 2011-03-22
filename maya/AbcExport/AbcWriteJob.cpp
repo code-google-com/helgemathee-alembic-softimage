@@ -41,8 +41,8 @@ namespace
     bool hasDuplicates(const util::ShapeSet & dagPath)
     {
         std::set<std::string> roots;
-        const util::ShapeSet::iterator end = dagPath.end();
-        for (util::ShapeSet::iterator it = dagPath.begin(); it != end; it++)
+        util::ShapeSet::const_iterator end = dagPath.end();
+        for (util::ShapeSet::iterator it=((util::ShapeSet&)dagPath).begin(); it != end; it++)
         {
             MFnTransform mFn(it->node());
             if (roots.count(mFn.name().asChar()) > 0)
@@ -807,8 +807,8 @@ bool AbcWriteJob::eval(double iFrame)
         AttributesWriter::mFilter = &mFilter;
         AttributesWriter::mAttribs = &mAttribs;
 
-        const std::set< MDagPath >::iterator end = mDagPath.end();
-        for (std::set< MDagPath >::iterator it = mDagPath.begin(); it != end; it++)
+        util::ShapeSet::iterator end = mDagPath.end();
+        for (util::ShapeSet::iterator it = mDagPath.begin(); it != end; it++)
         {
             mCurDag = *it;
             setup(iFrame * util::spf(), MayaTransformWriterPtr());

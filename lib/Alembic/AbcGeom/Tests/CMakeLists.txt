@@ -43,7 +43,7 @@ SET( TEST_LIBS
      ${ALEMBIC_HDF5_LIBS}
      ${ALEMBIC_ILMBASE_LIBS}
      ${CMAKE_THREAD_LIBS_INIT}
-     ${ZLIB_LIBRARIES} m )
+     ${ZLIB_LIBRARIES} ${WORKAROUND_FOR_LIBS} )
 
 #-******************************************************************************
 ADD_EXECUTABLE( AbcGeom_PolyMeshTest

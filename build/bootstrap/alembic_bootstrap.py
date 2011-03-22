@@ -212,9 +212,9 @@ def configureCMakeBoost( cmake_args ):
     libdir, lib = Path( cmake_args[2] ).split()
 
     try:
-        cmake_extra_args += ' -D BOOST_INCLUDEDIR:STRING="%s"' % cmake_args[1]
+        cmake_extra_args += ' -D BOOST_INCLUDEDIR:PATH="%s"' % cmake_args[1]
 
-        cmake_extra_args += " -D BOOST_LIBRARYDIR:FILEPATH=%s" % libdir
+        cmake_extra_args += " -D BOOST_LIBRARYDIR:PATH=%s" % libdir
 
         cmake_extra_args += " -D Boost_PROGRAM_OPTIONS_LIBRARY:FILEPATH=%s" % libpath
 
@@ -245,9 +245,9 @@ def configureCMakeZlib( cmake_args ):
     srcdir = cmake_args[0]
 
     try:
-        cmake_extra_args+=' -D ZLIB_INCLUDE_DIR:STRING="%s"' % cmake_args[1]
+        cmake_extra_args+=' -D ZLIB_INCLUDE_DIR:PATH="%s"' % cmake_args[1]
 
-        cmake_extra_args+=' -D ZLIB_LIBRARY:STRING="%s"' % cmake_args[2]
+        cmake_extra_args+=' -D ZLIB_LIBRARY:PATH="%s"' % cmake_args[2]
 
         cmake_extra_args+=' -G "%s"' % cmake_args[3]
 
@@ -303,7 +303,7 @@ def configureCMakeHDF5( cmake_args ):
         fullPaths.append( libpath )
 
     try:
-        cmake_extra_args += ' -D HDF5_C_INCLUDE_DIR:STRING="%s"' % incdir
+        cmake_extra_args += ' -D HDF5_C_INCLUDE_DIR:PATH="%s"' % incdir
         fullPaths.append( incdir )
 
         gotHDF5 = reduce( lambda x, y: x and y,
@@ -315,7 +315,7 @@ def configureCMakeHDF5( cmake_args ):
 
         cmake_extra_args += hdf5Libs
 
-        cmake_extra_args += " -D HDF5_LIBRARY_DIR:STRING=%s" % libdir
+        cmake_extra_args += " -D HDF5_LIBRARY_DIR:PATH=%s" % libdir
 
         cmake_extra_args += ' -G "%s"' % cmake_args[3]
 
@@ -365,7 +365,7 @@ def configureCMakeIlmbase( cmake_args, useRoot = False ):
         ilmbaseLibs += cmakeEntry
 
     try:
-        cmake_extra_args += ' -D ALEMBIC_ILMBASE_INCLUDE_DIRECTORY:STRING="%s"' % cmake_args[1]
+        cmake_extra_args += ' -D ALEMBIC_ILMBASE_INCLUDE_DIRECTORY:PATH="%s"' % cmake_args[1]
 
         cmake_extra_args += ilmbaseLibs
 
@@ -894,14 +894,14 @@ def runCMake( opts, srcdir, ranBootstrap = False ):
             cmake_extra_args += ' -D PRMAN_ROOT:STRING="%s"' %opts.prman
 
         if opts.hdf5_include_dir:
-            cmake_extra_args += ' -D HDF5_C_INCLUDE_DIR:STRING="%s"' % \
+            cmake_extra_args += ' -D HDF5_C_INCLUDE_DIR:PATH="%s"' % \
                 opts.hdf5_include_dir
         if opts.hdf5_hdf5_library:
             cmake_extra_args += ' -D HDF5_hdf5_LIBRARY:FILEPATH=%s' % \
                 opts.hdf5_hdf5_library
 
         if opts.ilmbase_include_dir:
-            cmake_extra_args += ' -D ALEMBIC_ILMBASE_INCLUDE_DIRECTORY:STRING="%s"' % \
+            cmake_extra_args += ' -D ALEMBIC_ILMBASE_INCLUDE_DIRECTORY:PATH="%s"' % \
                 opts.ilmbase_include_dir
 
         if opts.ilmbase_imath_library:
@@ -909,7 +909,7 @@ def runCMake( opts, srcdir, ranBootstrap = False ):
                 opts.ilmbase_imath_library
 
         if opts.boost_include_dir:
-            cmake_extra_args += ' -D BOOST_INCLUDEDIR:STRING="%s"' % \
+            cmake_extra_args += ' -D BOOST_INCLUDEDIR:PATH="%s"' % \
                 opts.boost_include_dir
 
         if opts.boost_program_options_library:
@@ -917,7 +917,7 @@ def runCMake( opts, srcdir, ranBootstrap = False ):
                 opts.boost_program_options_library
 
         if opts.zlib_include_dir:
-            cmake_extra_args += ' -D ZLIB_INCLUDE_DIR:STRING="%s"' % \
+            cmake_extra_args += ' -D ZLIB_INCLUDE_DIR:PATH="%s"' % \
                 opts.zlib_include_dir
 
         if opts.zlib_library:

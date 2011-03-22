@@ -46,6 +46,10 @@
 
 #include <hdf5.h>
 
+#ifdef PLATFORM_WINDOWS
+    using namespace boost;
+#endif
+
 //-*****************************************************************************
 namespace A5 = Alembic::AbcCoreHDF5;
 
