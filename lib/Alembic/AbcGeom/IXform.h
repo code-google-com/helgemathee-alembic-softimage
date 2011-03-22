@@ -94,7 +94,12 @@ public:
         init( iArg0, iArg1 );
     }
 
-    //! Default copy constructor used.
+    //! Copy constructor.
+    IXformSchema(const IXformSchema& iCopy)
+    {
+        *this = iCopy;
+    }
+
     //! Default assignment operator used.
 
     //! Return the number of samples contained in the animated property.

@@ -42,7 +42,13 @@
 
 const MTypeId AlembicNode::mMayaNodeId(0x00082697);
 
-MStatus initializePlugin(MObject obj)
+#ifdef PLATFORM_WINDOWS
+  #define MLL_EXPORT __declspec(dllexport)
+#else
+  #define MLL_EXPORT
+#endif
+
+MLL_EXPORT MStatus initializePlugin(MObject obj)
 {
     MFnPlugin plugin(obj, "Sony Pictures Imageworks", "1.0", "Any");
 
@@ -58,7 +64,7 @@ MStatus initializePlugin(MObject obj)
     return status;
 }
 
-MStatus uninitializePlugin(MObject obj)
+MLL_EXPORT MStatus uninitializePlugin(MObject obj)
 {
     MFnPlugin plugin(obj);
 
