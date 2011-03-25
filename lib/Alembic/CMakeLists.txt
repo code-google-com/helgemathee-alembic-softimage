@@ -37,7 +37,7 @@
 # Recurse into all the subdirectories
 
 ADD_SUBDIRECTORY( Util )
-# ADD_SUBDIRECTORY( GLUtil )
+ADD_SUBDIRECTORY( GLUtil )
 ADD_SUBDIRECTORY( MD5Hash )
 
 ADD_SUBDIRECTORY( AbcCoreAbstract )
