@@ -52,10 +52,6 @@
 #include <boost/ref.hpp>
 #include <boost/type_traits.hpp>
 
-#ifdef PLATFORM_WINDOWS
-  using namespace boost;
-#endif
-
 #include <iostream>
 #include <string>
 #include <exception>

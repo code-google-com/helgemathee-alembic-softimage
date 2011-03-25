@@ -42,6 +42,7 @@
 #include <stdlib.h>
 
 #include <ImathMath.h>
+#include <ImathRandom.h>
 
 #include <vector>
 #include <iostream>
@@ -578,20 +579,12 @@ void testAcyclicTime2()
     const size_t numSamps = 44;
 
     chrono_t ranTime = 0.0;
-#ifdef PLATFORM_WINDOWS
-    srand( numSamps );
-#else
-    srand48( numSamps );
-#endif
+	Imath::srand48( numSamps );
 
     for ( size_t i = 0 ; i < numSamps ; ++i )
     {
         // sample randomly
-#ifdef PLATFORM_WINDOWS
-        ranTime += rand();
-#else
-        ranTime += drand48();
-#endif
+		ranTime += Imath::drand48();
         tvec.push_back( ranTime );
     }
 

@@ -128,5 +128,16 @@
 
 #include <Alembic/AbcGeom/All.h>
 
+using Alembic::Util::uint8_t;
+using Alembic::Util::int8_t;
+using Alembic::Util::uint16_t;
+using Alembic::Util::int16_t;
+using Alembic::Util::uint32_t;
+using Alembic::Util::int32_t;
+using Alembic::Util::uint64_t;
+using Alembic::Util::int64_t;
+using Alembic::Util::float16_t;
+using Alembic::Util::float32_t;
+using Alembic::Util::float64_t;
 
 #endif  // _AbcExport_Foundation_h_

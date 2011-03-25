@@ -43,7 +43,7 @@ TARGET_LINK_LIBRARIES( GlutSkeleton
                       ${ALEMBIC_GL_LIBS}
                       ${CMAKE_THREAD_LIBS_INIT} 
                       ${ZLIB_LIBRARIES}
-                      ${WORKAROUND_FOR_LIBS} )
+                      ${EXTERNAL_MATH_LIBS} )
 
 INSTALL( TARGETS GlutSkeleton
          DESTINATION bin )

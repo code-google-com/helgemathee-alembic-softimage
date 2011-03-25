@@ -51,6 +51,18 @@
 #include <Alembic/AbcCoreAbstract/TimeSampling.h>
 #include <Alembic/Abc/IArchive.h>
 
+using Alembic::Util::uint8_t;
+using Alembic::Util::int8_t;
+using Alembic::Util::uint16_t;
+using Alembic::Util::int16_t;
+using Alembic::Util::uint32_t;
+using Alembic::Util::int32_t;
+using Alembic::Util::uint64_t;
+using Alembic::Util::int64_t;
+using Alembic::Util::float16_t;
+using Alembic::Util::float32_t;
+using Alembic::Util::float64_t;
+
 // replace one MObject with another, while keeping all the old hierarchy intact
 // The objects have to be a Dag object
 MStatus replaceDagObject(MObject & oldObject, MObject & newObject,

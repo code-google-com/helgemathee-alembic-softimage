@@ -46,10 +46,6 @@
 
 #include <hdf5.h>
 
-#ifdef PLATFORM_WINDOWS
-    using namespace boost;
-#endif
-
 //-*****************************************************************************
 namespace A5 = Alembic::AbcCoreHDF5;
 
@@ -175,7 +171,7 @@ void testDuplicateArray()
                 TESTING_ASSERT(samp1->getDimensions().numPoints() == numVals);
                 TESTING_ASSERT(samp2->getDimensions().numPoints() == numVals);
 
-                int16_t * data = (int16_t *)(samp0->getData());
+                Alembic::Util::int16_t * data = (Alembic::Util::int16_t *)(samp0->getData());
                 TESTING_ASSERT(data[0] == 7);
                 TESTING_ASSERT(data[1] == 7);
                 TESTING_ASSERT(data[2] == 7);
@@ -184,7 +180,7 @@ void testDuplicateArray()
                     TESTING_ASSERT(data[j] == 0);
                 }
 
-                data = (int16_t *)(samp1->getData());
+                data = (Alembic::Util::int16_t *)(samp1->getData());
                 TESTING_ASSERT(data[0] == 8);
                 TESTING_ASSERT(data[1] == 16);
                 TESTING_ASSERT(data[2] == 32);
@@ -193,7 +189,7 @@ void testDuplicateArray()
                     TESTING_ASSERT(data[j] == 0);
                 }
 
-                data = (int16_t *)(samp2->getData());
+                data = (Alembic::Util::int16_t *)(samp2->getData());
                 TESTING_ASSERT(data[0] == 7);
                 TESTING_ASSERT(data[1] == 7);
                 TESTING_ASSERT(data[2] == 7);
@@ -215,7 +211,7 @@ void testDuplicateArray()
                 TESTING_ASSERT(samp1->getDimensions().numPoints() == numVals);
                 TESTING_ASSERT(samp2->getDimensions().numPoints() == numVals);
 
-                int16_t * data = (int16_t *)(samp0->getData());
+                Alembic::Util::int16_t * data = (Alembic::Util::int16_t *)(samp0->getData());
                 TESTING_ASSERT(data[0] == 8);
                 TESTING_ASSERT(data[1] == 16);
                 TESTING_ASSERT(data[2] == 32);
@@ -224,7 +220,7 @@ void testDuplicateArray()
                     TESTING_ASSERT(data[j] == 0);
                 }
 
-                data = (int16_t *)(samp1->getData());
+                data = (Alembic::Util::int16_t *)(samp1->getData());
                 TESTING_ASSERT(data[0] == 7);
                 TESTING_ASSERT(data[1] == 7);
                 TESTING_ASSERT(data[2] == 7);
@@ -233,7 +229,7 @@ void testDuplicateArray()
                     TESTING_ASSERT(data[j] == 0);
                 }
 
-                data = (int16_t *)(samp2->getData());
+                data = (Alembic::Util::int16_t *)(samp2->getData());
                 TESTING_ASSERT(data[0] == 8);
                 TESTING_ASSERT(data[1] == 16);
                 TESTING_ASSERT(data[2] == 32);
@@ -255,7 +251,7 @@ void testDuplicateArray()
                 TESTING_ASSERT(samp1->getDimensions().numPoints() == numVals*2);
                 TESTING_ASSERT(samp2->getDimensions().numPoints() == numVals*2);
 
-                int8_t * data = (int8_t *)(samp0->getData());
+                Alembic::Util::int8_t * data = (Alembic::Util::int8_t *)(samp0->getData());
                 TESTING_ASSERT(data[0] == 8);
                 TESTING_ASSERT(data[1] == 0);
                 TESTING_ASSERT(data[2] == 16);
@@ -267,7 +263,7 @@ void testDuplicateArray()
                     TESTING_ASSERT(data[j] == 0);
                 }
 
-                data = (int8_t *)(samp1->getData());
+                data = (Alembic::Util::int8_t *)(samp1->getData());
                 TESTING_ASSERT(data[0] == 7);
                 TESTING_ASSERT(data[1] == 0);
                 TESTING_ASSERT(data[2] == 7);
@@ -279,7 +275,7 @@ void testDuplicateArray()
                     TESTING_ASSERT(data[j] == 0);
                 }
 
-                data = (int8_t *)(samp2->getData());
+                data = (Alembic::Util::int8_t *)(samp2->getData());
                 TESTING_ASSERT(data[0] == 7);
                 TESTING_ASSERT(data[1] == 0);
                 TESTING_ASSERT(data[2] == 7);
@@ -389,7 +385,7 @@ void testReadWriteArrays()
                 props->createArrayProperty(
                     ABC::PropertyHeader("int16", ABC::kArrayProperty,
                     ABC::MetaData(), dtype, staticSampling));
-            std::vector < int16_t > vals(2);
+            std::vector < Alembic::Util::int16_t > vals(2);
             vals[0] = -20000;
             vals[1] = 77;
             Alembic::Util::Dimensions dims(vals.size());
