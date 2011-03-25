@@ -1024,8 +1024,8 @@ def makeParser( mk_cmake_basename ):
                               help="Generate debug Makefiles" )
 
     configOptions.add_option( "--shared", dest="sharedLibs",
-                              action="store_true", default=False, help="Build shared libraries" )
-#                              help="Build shared libraries" )                              
+                              action="store_true", default=False,
+                              help="Build shared libraries" )                              
 
     configOptions.add_option( "--cflags", dest="cflags", type="string",
                               default=None, help="CFLAGS to pass to the compiler",
