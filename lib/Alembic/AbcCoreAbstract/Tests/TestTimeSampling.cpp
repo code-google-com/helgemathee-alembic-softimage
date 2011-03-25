@@ -43,6 +43,7 @@
 
 #include <ImathMath.h>
 #include <ImathRandom.h>
+using namespace Imath;
 
 #include <vector>
 #include <iostream>
@@ -579,12 +580,12 @@ void testAcyclicTime2()
     const size_t numSamps = 44;
 
     chrono_t ranTime = 0.0;
-	Imath::srand48( numSamps );
+    srand48( numSamps );
 
     for ( size_t i = 0 ; i < numSamps ; ++i )
     {
         // sample randomly
-		ranTime += Imath::drand48();
+        ranTime += drand48();
         tvec.push_back( ranTime );
     }
 
@@ -614,26 +615,18 @@ void testAcyclicTime3()
     const size_t numSamps = 79;
 
     chrono_t ranTime = 0.0;
-#ifdef PLATFORM_WINDOWS
-    srand( numSamps );
-#else
     srand48( numSamps );
-#endif
 
     for ( size_t i = 0 ; i < numSamps ; ++i )
     {
         // sample randomly
-#ifdef PLATFORM_WINDOWS
-        ranTime += rand() * (chrono_t)i;
-#else
         ranTime += drand48() * (chrono_t)i;
-#endif
         tvec.push_back( ranTime );
     }
 
     AbcA::ArraySamplePtr rotPtr = buildTimeSamplesPtr( tvec );
 
-    AbcA::TimeSamplingType::AcyclicFlag acf = AbcA::TimeSamplingType::kAcyclic;
+    AbcA::TimeSamplingType::AcyclicFlag acf;
 
     const AbcA::TimeSamplingType tSampTyp( acf );
     const AbcA::TimeSampling tSamp( tSampTyp, numSamps, rotPtr );

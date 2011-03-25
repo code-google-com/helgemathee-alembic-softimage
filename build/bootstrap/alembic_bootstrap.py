@@ -875,10 +875,10 @@ def runCMake( opts, srcdir, ranBootstrap = False ):
             cmake_extra_args += ' -D CMAKE_BUILD_TYPE:STRING="Release"'
             cmake_extra_args += ' -D CMAKE_TRY_COMPILE_CONFIGURATION:STRING="Release"'
 
-#        if opts.sharedLibs:
-#            cmake_extra_args += " -U BUILD_STATIC_LIBS"
-#        else:
-#            cmake_extra_args += ' -D BUILD_STATIC_LIBS:BOOL="TRUE"'
+        if opts.sharedLibs:
+            cmake_extra_args += " -U BUILD_STATIC_LIBS"
+        else:
+            cmake_extra_args += ' -D BUILD_STATIC_LIBS:BOOL="TRUE"'
             
         if opts.quiet:
             cmake_extra_args += ' -D QUIET:STRING="%s"' % opts.quiet
@@ -1022,9 +1022,9 @@ def makeParser( mk_cmake_basename ):
     configOptions.add_option( "--debug", dest="debug",
                               action="store_true", default=False,
                               help="Generate debug Makefiles" )
-                              
-#    configOptions.add_option( "--shared", dest="sharedLibs",
-#                              action="store_true", default=False,
+
+    configOptions.add_option( "--shared", dest="sharedLibs",
+                              action="store_true", default=False, help="Build shared libraries" )
 #                              help="Build shared libraries" )                              
 
     configOptions.add_option( "--cflags", dest="cflags", type="string",
