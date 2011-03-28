@@ -31,10 +31,10 @@ if NOT exist "%outDir%" md %outDir%
 REM *********************************************************************
 REM Do NOT call windows\copy_hdf.bat
 REM *********************************************************************
-:call ..\..\..\Alembic\contrib\hdf5-1.8.5-patch1\windows\copy_hdf.bat
+:call %ALEMBIC_ROOT%\contrib\hdf5-1.8.5-patch1\windows\copy_hdf.bat
 
 @echo on
 pushd %outDir%
-cmake -G %Generator% -D HDF5_BUILD_HL_LIB:BOOL=ON ..\..\..\Alembic\contrib\hdf5-1.8.5-patch1
+cmake -G %Generator% -D HDF5_BUILD_HL_LIB:BOOL=ON %ALEMBIC_ROOT%\contrib\hdf5-1.8.5-patch1
 vcbuild /nologo %1 %2 %3 %4 %5 %6 HDF5.sln "%config%|%arch%"
 @popd
