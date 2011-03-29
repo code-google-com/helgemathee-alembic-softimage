@@ -47,5 +47,5 @@ set ZLIB_ARGS=--zlib_include_dir=%luxSrc%\extra\zlib125 --zlib_library=%luxSrc%\
 @echo on
 pushd %platOut%
 del CMakeCache.txt
-%~dp0\build\bootstrap\alembic_bootstrap.py %BASE_ARGS% %HDF_ARGS% %ILM_ARGS% %BOOST_ARGS% %ZLIB_ARGS% --cflags="%ccflags%" --cxxflags="%cppflags%" %platOut% 
+python %ALEMBIC_ROOT%\build\bootstrap\alembic_bootstrap.py %BASE_ARGS% %HDF_ARGS% %ILM_ARGS% %BOOST_ARGS% %ZLIB_ARGS% --cflags="%ccflags%" --cxxflags="%cppflags%" %platOut% 
 popd
