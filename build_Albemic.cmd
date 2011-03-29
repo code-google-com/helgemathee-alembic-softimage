@@ -27,4 +27,4 @@ set buildArg="%config%|%arch%"
 set outDir=%ALEMBIC_OUT%\%SYS%
 
 @echo on
-vcbuild /nologo %* %outDir%\Alembic.sln %buildArg%
+vcbuild /nologo %1 %2 %3 %4 %5 %6 %outDir%\Alembic.sln %buildArg%
