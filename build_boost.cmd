@@ -35,10 +35,15 @@ if /i NOT "%1" == "noboot" (
 set rootOut=%ALEMBIC_OUT%
 set targetOut=%rootOut%\%SYS%\boost%db%
 
+if NOT "%icl%" == "" set altCompiler=toolset=intel
+
 set BOOST_INC=%rootOut%\boost
 set BOOST_LIB=%targetOut%\lib
 set BOOST_BUILD=%targetOut%\build
+set BOOST_OUT=--prefix=%BOOST_INC% --libdir=%BOOST_LIB% --build-dir=%BOOST_BUILD%
+set BOOST_ARGS=--layout=versioned link=static threading=multi %addrModel% %altCompiler%
+set BUILD_THESE_ONLY= --with-program_options --with-iostreams
 
 @echo on
-call bjam %1 %2 %3 %4 %5 install %VARIANT% --layout=versioned link=static threading=multi --prefix=%BOOST_INC% --libdir=%BOOST_LIB% --build-dir=%BOOST_BUILD% %addrModel%
+call bjam %1 %2 %3 %4 %5 install %VARIANT% %BOOST_ARGS% %BOOST_OUT% %BUILD_THESE_ONLY%
 @popd
