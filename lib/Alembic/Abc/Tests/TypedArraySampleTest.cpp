@@ -1,7 +1,7 @@
 //-*****************************************************************************
 //
 // Copyright (c) 2009-2010,
-//  Sony Pictures Imageworks Inc. and
+//  Sony Pictures Imageworks, Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
 // All rights reserved.
@@ -16,7 +16,7 @@
 // in the documentation and/or other materials provided with the
 // distribution.
 // *       Neither the name of Sony Pictures Imageworks, nor
-// Industrial Light & Magic, nor the names of their contributors may be used
+// Industrial Light & Magic nor the names of their contributors may be used
 // to endorse or promote products derived from this software without specific
 // prior written permission.
 //
@@ -34,25 +34,69 @@
 //
 //-*****************************************************************************
 
-#include <Alembic/AbcCoreAbstract/ObjectReader.h>
+#include <Alembic/Abc/All.h>
+#include <Alembic/AbcCoreHDF5/All.h>
+#include <boost/random.hpp>
+#include "Assert.h"
 
-namespace Alembic {
-namespace AbcCoreAbstract {
-namespace ALEMBIC_VERSION_NS {
+#include <ImathMath.h>
+
+#include <limits>
+
+namespace Abc = Alembic::Abc;
+using namespace Abc;
+
 
 //-*****************************************************************************
-ObjectReader::~ObjectReader()
+void simpleTestOut( const std::string &iArchiveName )
 {
-    // Nothing
+    OArchive archive( Alembic::AbcCoreHDF5::WriteArchive(),
+                      iArchiveName );
+    OObject archiveTop( archive, kTop );
+
+    OObject c0( archiveTop, "c0" );
+    OCompoundProperty c0Props = c0.getProperties();
+
+
+    OInt32ArrayProperty i32ap( c0Props, "i32ap" );
+
+    boost::shared_ptr<std::vector<int32_t> > vptr( new std::vector<int32_t>( 50, 4 ) );
+
+    Int32ArraySample samp( *vptr );
+
+    i32ap.set( samp );
 }
 
 //-*****************************************************************************
-ObjectReaderPtr ObjectReader::getChild( size_t i )
+void simpleTestIn( const std::string &iArchiveName )
 {
-    const ObjectHeader &header = getChildHeader( i );
-    return getChild( header.getName() );
+    IArchive archive( Alembic::AbcCoreHDF5::ReadArchive(),
+                      iArchiveName, ErrorHandler::kThrowPolicy );
+
+    IObject archiveTop = archive.getTop();
+
+    IObject c0( archiveTop, "c0" );
+    ICompoundProperty c0Props = c0.getProperties();
+
+    IInt32ArrayProperty i32ap( c0Props, "i32ap" );
+
+    Int32ArraySamplePtr sptr = i32ap.getValue();
+
+    for ( int32_t i = 0 ; i < 50 ; ++i )
+    {
+        TESTING_ASSERT( 4 == (*sptr)[i] );
+        //std::cout << (*sptr)[i] << std::endl;
+    }
+
 }
 
-} // End namespace ALEMBIC_VERSION_NS
-} // End namespace AbcCoreAbstract
-} // End namespace Alembic
+//-*****************************************************************************
+int main( int argc, char *argv[] )
+{
+    const std::string arkive( "typedArraySample.abc" );
+
+    simpleTestOut( arkive );
+    simpleTestIn( arkive );
+
+    return 0;
+}

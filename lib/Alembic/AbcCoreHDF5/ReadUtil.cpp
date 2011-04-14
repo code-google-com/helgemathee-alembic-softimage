@@ -41,6 +41,7 @@
 
 namespace Alembic {
 namespace AbcCoreHDF5 {
+namespace ALEMBIC_VERSION_NS {
 
 //-*****************************************************************************
 //-*****************************************************************************
@@ -157,7 +158,8 @@ ReadDimensions( hid_t iParent,
     ReadSmallArray( iParent, iAttrName, H5T_STD_U32LE, H5T_NATIVE_UINT32,
                     maxRank, readRank, ( void * )dimVals );
 
-    Dimensions retDims( readRank );
+    Dimensions retDims;
+    retDims.setRank( readRank );
     for ( size_t r = 0; r < readRank; ++r )
     {
         retDims[r] = ( size_t )dimVals[r];
@@ -499,20 +501,24 @@ ReadArray( AbcA::ReadArraySampleCachePtr iCache,
     {
         // Get the dimensions
         int rank = H5Sget_simple_extent_ndims( dspaceId );
-        ABCA_ASSERT( rank >= 0,
-                     "H5Sget_simple_extent_ndims() failed." );
+        ABCA_ASSERT( rank == 1,
+                     "H5Sget_simple_extent_ndims() must be 1." );
 
-        HDimensions hdims;
-        hdims.setRank( rank );
-        rank = H5Sget_simple_extent_dims( dspaceId, hdims.rootPtr(), NULL );
-        ABCA_ASSERT( rank == hdims.rank(),
-                     "H5Sget_simple_extent_dims() "
-                     "found inconsistent ranks."
-                     << std::endl
-                     << "Expected rank: " << hdims.rank()
-                     << " instead it was: " << rank );
+        hsize_t hdim = 0;
 
-        Dimensions dims( hdims );
+        rank = H5Sget_simple_extent_dims( dspaceId, &hdim, NULL );
+
+        Dimensions dims;
+        std::string dimName = iName + ".dims";
+        if ( H5Aexists( iParent, dimName.c_str() ) )
+        {
+            ReadDimensions( iParent, dimName, dims );
+        }
+        else
+        {
+            dims.setRank(1);
+            dims[0] = hdim / iDataType.getExtent();
+        }
 
         ABCA_ASSERT( dims.numPoints() > 0,
                      "Degenerate dims in Dataset read" );
@@ -531,12 +537,21 @@ ReadArray( AbcA::ReadArraySampleCachePtr iCache,
     else if ( dspaceClass == H5S_NULL )
     {
         Dimensions dims;
-        ReadDimensions( dsetId, "dims", dims );
-        ABCA_ASSERT( dims.rank() > 0,
+        std::string dimName = iName + ".dims";
+        if ( H5Aexists( iParent, dimName.c_str() ) )
+        {
+            ReadDimensions( iParent, dimName, dims );
+            ABCA_ASSERT( dims.rank() > 0,
                      "Degenerate rank in Dataset read" );
-        // Num points should be zero here.
-        ABCA_ASSERT( dims.numPoints() == 0,
+            // Num points should be zero here.
+            ABCA_ASSERT( dims.numPoints() == 0,
                      "Expecting zero points in dimensions" );
+        }
+        else
+        {
+            dims.setRank(1);
+            dims[0] = 0;
+        }
 
         ret = AbcA::AllocateArraySample( iDataType, dims );
     }
@@ -677,5 +692,6 @@ ReadTimeSamples( AbcA::ReadArraySampleCachePtr iCache,
     }
 }
 
+} // End namespace ALEMBIC_VERSION_NS
 } // End namespace AbcCoreHDF5
 } // End namespace Alembic

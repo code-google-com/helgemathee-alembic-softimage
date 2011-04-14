@@ -34,37 +34,84 @@
 //
 //-*****************************************************************************
 
-#ifndef _SimpleAbcViewer_ISimpleXformDrw_h_
-#define _SimpleAbcViewer_ISimpleXformDrw_h_
+#include <Alembic/AbcGeom/All.h>
+#include <Alembic/AbcCoreHDF5/All.h>
+#include <Alembic/Abc/Tests/Assert.h>
 
-#include "Foundation.h"
-#include "IObjectDrw.h"
+#include <ImathMath.h>
 
-namespace SimpleAbcViewer {
+#include <limits>
+
+static const double VAL_EPSILON = std::numeric_limits<double>::epsilon() \
+    * 1024.0;
+
+bool almostEqual( const double &a, const double &b,
+                  const double &epsilon = VAL_EPSILON )
+{
+    return Imath::equalWithAbsError( a, b, epsilon );
+}
+
+using namespace Alembic::AbcGeom;
 
 //-*****************************************************************************
-//! Transform applies a matrix transformation to all of its children
-//! objects. Because we have deep, deep hierarchies, the transformation
-//! is applied via an internally managed transform stack, rather than
-//! through OpenGL's.
-class ISimpleXformDrw : public IObjectDrw
+void xformOut()
 {
-public:
-    ISimpleXformDrw( ISimpleXform &iXform );
+    OArchive archive( Alembic::AbcCoreHDF5::WriteArchive(), "matrixXform.abc" );
+    OXform a( OObject( archive, kTop ), "a" );
 
-    virtual ~ISimpleXformDrw();
 
-    virtual bool valid();
+    M44d mat;
+    mat.makeIdentity();
 
-    virtual void setTime( chrono_t iSeconds );
+    for ( size_t i = 0; i < 20; ++i )
+    {
+        XformSample asamp;
 
-    virtual void draw( const DrawContext & iCtx );
+        mat.x[0][0] = (double)i;
 
-protected:
-    ISimpleXform m_xform;
-    M44d m_localToParent;
-};
+        mat.x[2][1] = 2.0 * i;
 
-} // End namespace SimpleAbcViewer
+        asamp.setMatrix( mat );
 
-#endif
+        a.getSchema().set( asamp, OSampleSelector( i ) );
+    }
+
+}
+
+//-*****************************************************************************
+void xformIn()
+{
+    IArchive archive( Alembic::AbcCoreHDF5::ReadArchive(), "matrixXform.abc" );
+
+    M44d mat;
+
+    mat.makeIdentity();
+
+    IXform a( IObject( archive, kTop ), "a" );
+    TESTING_ASSERT( a.getSchema().getNumOps() == 1 );
+    TESTING_ASSERT( a.getSchema().getInheritsXforms() );
+    for ( index_t i = 0; i < 20; ++i )
+    {
+        XformSample xs;
+        a.getSchema().get( xs, Abc::ISampleSelector( i ) );
+
+        mat.x[0][0] = (double)i;
+        mat.x[2][1] = 2.0 * i;
+
+        TESTING_ASSERT( xs.getNumOps() == 1 );
+        TESTING_ASSERT( xs[0].isMatrixOp() );
+
+        TESTING_ASSERT( xs.getMatrix() == mat );
+    }
+
+}
+
+
+//-*****************************************************************************
+int main( int argc, char *argv[] )
+{
+    xformOut();
+    xformIn();
+
+    return 0;
+}

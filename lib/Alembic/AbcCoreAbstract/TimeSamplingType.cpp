@@ -38,7 +38,7 @@
 
 namespace Alembic {
 namespace AbcCoreAbstract {
-namespace v1 {
+namespace ALEMBIC_VERSION_NS {
 
 //-*****************************************************************************
 // static instancing
@@ -89,7 +89,7 @@ std::ostream &operator<<( std::ostream &ostr, const TimeSamplingType &tst )
 
 
 
-} // End namespace v1
+} // End namespace ALEMBIC_VERSION_NS
 } // End namespace AbcCoreAbstract
 } // End namespace Alembic
 

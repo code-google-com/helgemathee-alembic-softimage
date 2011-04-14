@@ -38,7 +38,7 @@
 
 namespace Alembic {
 namespace AbcCoreAbstract {
-namespace v1 {
+namespace ALEMBIC_VERSION_NS {
 
 //-*****************************************************************************
 ArraySample::Key ArraySample::getKey() const
@@ -115,7 +115,7 @@ ArraySample::Key ArraySample::getKey() const
                 for (size_t k = 0; k < wlen; ++k)
                     v[k] = wstr[k];
 
-                md5.update(v.size()==0 ? NULL : &(v.front()), v.size());
+                md5.update( v.size() == 0 ? NULL : &(v.front()), v.size() );
             }
 
             // append a 0 for the NULL seperator character
@@ -184,6 +184,6 @@ ArraySamplePtr AllocateArraySample( const DataType &iDtype,
     }
 }
 
-} // End namespace v1
+} // End namespace ALEMBIC_VERSION_NS
 } // End namespace AbcCoreAbstract
 } // End namespace Alembic

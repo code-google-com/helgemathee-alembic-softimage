@@ -60,7 +60,12 @@ public:
     public:
         //! Creates a default sample with no data in it.
         //! ...
-        Sample() {}
+        Sample()
+          : m_faceVaryingInterpolateBoundary( ABC_GEOM_SUBD_NULL_INT_VALUE )
+          , m_faceVaryingPropagateCorners( ABC_GEOM_SUBD_NULL_INT_VALUE )
+          , m_interpolateBoundary( ABC_GEOM_SUBD_NULL_INT_VALUE )
+          , m_subdScheme( "catmull-clark" )
+        {}
 
         //! Creates a sample with position data, index data, and count data.
         //! For specifying samples with an explicit topology. The first
@@ -84,7 +89,6 @@ public:
 
                 const Abc::Int32ArraySample &iHoles = Abc::Int32ArraySample()
               )
-
           : m_positions( iPositions )
           , m_faceIndices( iFaceIndices )
           , m_faceCounts( iFaceCounts )
@@ -245,16 +249,16 @@ public:
         int32_t m_interpolateBoundary;
 
         // Creases
-        Abc::Int32ArraySample    m_creaseIndices;
-        Abc::Int32ArraySample    m_creaseLengths;
-        Abc::FloatArraySample  m_creaseSharpnesses;
+        Abc::Int32ArraySample m_creaseIndices;
+        Abc::Int32ArraySample m_creaseLengths;
+        Abc::FloatArraySample m_creaseSharpnesses;
 
         // Corners
-        Abc::Int32ArraySample    m_cornerIndices;
-        Abc::FloatArraySample  m_cornerSharpnesses;
+        Abc::Int32ArraySample m_cornerIndices;
+        Abc::FloatArraySample m_cornerSharpnesses;
 
         // Holes
-        Abc::Int32ArraySample    m_holes;
+        Abc::Int32ArraySample m_holes;
 
         // subdivision scheme
         std::string m_subdScheme;
@@ -295,9 +299,9 @@ public:
     OSubDSchema( CPROP_PTR iParentObject,
                      const std::string &iName,
 
-                     const Abc::OArgument &iArg0 = Abc::OArgument(),
-                     const Abc::OArgument &iArg1 = Abc::OArgument(),
-                     const Abc::OArgument &iArg2 = Abc::OArgument() )
+                     const Abc::Argument &iArg0 = Abc::Argument(),
+                     const Abc::Argument &iArg1 = Abc::Argument(),
+                     const Abc::Argument &iArg2 = Abc::Argument() )
       : Abc::OSchema<SubDSchemaInfo>( iParentObject, iName,
                                    iArg0, iArg1, iArg2 )
     {
@@ -308,9 +312,9 @@ public:
 
     template <class CPROP_PTR>
     explicit OSubDSchema( CPROP_PTR iParentObject,
-                          const Abc::OArgument &iArg0 = Abc::OArgument(),
-                          const Abc::OArgument &iArg1 = Abc::OArgument(),
-                          const Abc::OArgument &iArg2 = Abc::OArgument() )
+                          const Abc::Argument &iArg0 = Abc::Argument(),
+                          const Abc::Argument &iArg1 = Abc::Argument(),
+                          const Abc::Argument &iArg2 = Abc::Argument() )
       : Abc::OSchema<SubDSchemaInfo>( iParentObject,
                                    iArg0, iArg1, iArg2 )
     {
@@ -422,13 +426,16 @@ protected:
     Abc::OInt32ArrayProperty m_creaseIndices;
     Abc::OInt32ArrayProperty m_creaseLengths;
     Abc::OFloatArrayProperty m_creaseSharpnesses;
+    std::vector < Abc::OSampleSelector > m_nullCreaseSamples;
 
     // Corners
     Abc::OInt32ArrayProperty m_cornerIndices;
     Abc::OFloatArrayProperty m_cornerSharpnesses;
+    std::vector < Abc::OSampleSelector > m_nullCornerSamples;
 
     // Holes
     Abc::OInt32ArrayProperty m_holes;
+    std::vector < Abc::OSampleSelector > m_nullHoleSamples;
 
     // subdivision scheme
     Abc::OStringProperty m_subdScheme;
@@ -442,6 +449,12 @@ protected:
 
     // arbitrary geometry parameters
     Abc::OCompoundProperty m_arbGeomParams;
+
+private:
+    void initCreases();
+    void initCorners();
+    void initHoles();
+
 };
 
 //-*****************************************************************************

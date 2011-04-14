@@ -73,6 +73,19 @@ bool IArrayProperty::isConstant()
 }
 
 //-*****************************************************************************
+bool IArrayProperty::isScalarLike()
+{
+    ALEMBIC_ABC_SAFE_CALL_BEGIN( "IArrayProperty::isScalarLike()" );
+
+    return m_property->isScalarLike();
+
+    ALEMBIC_ABC_SAFE_CALL_END();
+
+    // Not all error handlers throw, so return a default.
+    return false;
+}
+
+//-*****************************************************************************
 AbcA::TimeSampling IArrayProperty::getTimeSampling()
 {
     ALEMBIC_ABC_SAFE_CALL_BEGIN( "IArrayProperty::getTimeSampling()" );
@@ -132,10 +145,10 @@ void IArrayProperty::init( AbcA::CompoundPropertyReaderPtr iParent,
                            const std::string &iName,
 
                            ErrorHandler::Policy iParentPolicy,
-                           const IArgument &iArg0,
-                           const IArgument &iArg1 )
+                           const Argument &iArg0,
+                           const Argument &iArg1 )
 {
-    IArguments args( iParentPolicy );
+    Arguments args( iParentPolicy );
     iArg0.setInto( args );
     iArg1.setInto( args );
 
