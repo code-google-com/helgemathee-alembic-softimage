@@ -7,7 +7,11 @@ goto :eof
 
 setlocal
 if /i "%1" == "db:" (
-	set DB=_db
+REM ******************************************************************************************
+REM let's assume we don't need to debug IlmBase, boost, or zlib and just use the non-debug
+REM libs even when building debug. This way we don't have to nuke the projects to switch.
+REM ******************************************************************************************
+:	set DB=_db
 	shift
 ) ELSE (
 	set DB=
