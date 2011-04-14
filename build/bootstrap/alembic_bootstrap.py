@@ -879,7 +879,7 @@ def runCMake( opts, srcdir, ranBootstrap = False ):
             cmake_extra_args += " -U BUILD_STATIC_LIBS"
         else:
             cmake_extra_args += ' -D BUILD_STATIC_LIBS:BOOL="TRUE"'
-
+            
         if opts.quiet:
             cmake_extra_args += ' -D QUIET:STRING="%s"' % opts.quiet
         else:
