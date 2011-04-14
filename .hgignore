@@ -1,6 +1,6 @@
 # regexp syntax.
 syntax: regexp
-#^contrib/
+^contrib/
 ^build/stash/
 .*\.pyc
 .*/doxygen
