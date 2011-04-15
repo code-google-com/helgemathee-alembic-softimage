@@ -1,7 +1,7 @@
 //-*****************************************************************************
 //
 // Copyright (c) 2009-2011,
-//  Sony Pictures Imageworks, Inc. and
+//  Sony Pictures Imageworks Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
 // All rights reserved.
@@ -16,7 +16,7 @@
 // in the documentation and/or other materials provided with the
 // distribution.
 // *       Neither the name of Sony Pictures Imageworks, nor
-// Industrial Light & Magic nor the names of their contributors may be used
+// Industrial Light & Magic, nor the names of their contributors may be used
 // to endorse or promote products derived from this software without specific
 // prior written permission.
 //
@@ -34,44 +34,60 @@
 //
 //-*****************************************************************************
 
-#include <maya/MFnPlugin.h>
-#include <maya/MObject.h>
+#include <Alembic/AbcGeom/Basis.h>
 
-#include "AlembicNode.h"
-#include "AbcImport.h"
+namespace Alembic {
+namespace AbcGeom {
 
-const MTypeId AlembicNode::mMayaNodeId(0x00082697);
-
-#ifdef PLATFORM_WINDOWS
-  #define MLL_EXPORT __declspec(dllexport)
-#else
-  #define MLL_EXPORT
-#endif
-
-MLL_EXPORT MStatus initializePlugin(MObject obj)
+//-*****************************************************************************
+std::string GetBasisNameFromBasisType( const BasisType basis )
 {
-    MFnPlugin plugin(obj, "Sony Pictures Imageworks", "1.0", "Any");
+    switch ( basis )
+    {
+    case kBezierBasis:
+        return "bezier";
 
-    MStatus status = plugin.registerCommand("AbcImport",
-                                AbcImport::creator,
-                                AbcImport::createSyntax);
+    case kBsplineBasis:
+        return "b-spline";
 
-    status = plugin.registerNode("AlembicNode",
-                                AlembicNode::mMayaNodeId,
-                                &AlembicNode::creator,
-                                &AlembicNode::initialize);
+    case kCatmullromBasis:
+        return "catmull-rom";
 
-    return status;
+    case kHermiteBasis:
+        return "hermite";
+
+    case kPowerBasis:
+        return "power";
+
+    default:
+        return "none";
+    }
 }
 
-MLL_EXPORT MStatus uninitializePlugin(MObject obj)
+//-*****************************************************************************
+int GetStepFromBasisType( const BasisType basis )
 {
-    MFnPlugin plugin(obj);
+    switch ( basis )
+    {
+    case kBezierBasis:
+        return 3;
 
-    MStatus status;
+    case kBsplineBasis:
+        return 1;
 
-    status = plugin.deregisterCommand("AlembicImport");
-    status = plugin.deregisterNode(AlembicNode::mMayaNodeId);
+    case kCatmullromBasis:
+        return 1;
 
-    return status;
+    case kHermiteBasis:
+        return 2;
+
+    case kPowerBasis:
+        return 4;
+
+    default:
+        return 1;
+    }
+}
+
+}
 }

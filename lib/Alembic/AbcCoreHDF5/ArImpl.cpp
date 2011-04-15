@@ -74,6 +74,14 @@ ArImpl::ArImpl( const std::string &iFileName,
 }
 
 //-*****************************************************************************
+ArImpl::ArImpl( const ArImpl &iCopy )
+  : m_fileName( iCopy.m_fileName )
+  , m_file( iCopy.m_file )
+  , m_top( iCopy.m_top )
+  , m_readArraySampleCache( iCopy.m_readArraySampleCache )
+{}
+
+//-*****************************************************************************
 const std::string &ArImpl::getName() const
 {
     return m_fileName;

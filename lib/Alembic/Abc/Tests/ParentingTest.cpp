@@ -165,6 +165,8 @@ void simpleTestIn( const std::string &iArchiveName )
 
         chrono_t compTime = startTime + ( i * dt );
 
+        chrono_t compTime = startTime + ( i * dt );
+
         std::cout << "acc0fap0 at sample " << i << " is at time "
                   << time
                   << " and has " << numPoints << " points "
