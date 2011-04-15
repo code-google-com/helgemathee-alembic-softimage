@@ -1,7 +1,7 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2011,
-//  Sony Pictures Imageworks, Inc. and
+// Copyright (c) 2009-2010,
+//  Sony Pictures Imageworks Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
 // All rights reserved.
@@ -16,7 +16,7 @@
 // in the documentation and/or other materials provided with the
 // distribution.
 // *       Neither the name of Sony Pictures Imageworks, nor
-// Industrial Light & Magic nor the names of their contributors may be used
+// Industrial Light & Magic, nor the names of their contributors may be used
 // to endorse or promote products derived from this software without specific
 // prior written permission.
 //
@@ -34,44 +34,61 @@
 //
 //-*****************************************************************************
 
-#include <maya/MFnPlugin.h>
-#include <maya/MObject.h>
+#include <Alembic/AbcGeom/All.h>
+#include <Alembic/AbcCoreHDF5/All.h>
 
-#include "AlembicNode.h"
-#include "AbcImport.h"
+#include "Assert.h"
 
-const MTypeId AlembicNode::mMayaNodeId(0x00082697);
+#include <iostream>
 
-#ifdef PLATFORM_WINDOWS
-  #define MLL_EXPORT __declspec(dllexport)
-#else
-  #define MLL_EXPORT
-#endif
+using namespace Alembic::AbcGeom;
 
-MLL_EXPORT MStatus initializePlugin(MObject obj)
+V3d g_trans( 2.0, 4.0, 8.0 );
+
+//-*****************************************************************************
+void writeArchive( const std::string &iArchive )
 {
-    MFnPlugin plugin(obj, "Sony Pictures Imageworks", "1.0", "Any");
+    OArchive out( Alembic::AbcCoreHDF5::WriteArchive(),
+                  iArchive );
 
-    MStatus status = plugin.registerCommand("AbcImport",
-                                AbcImport::creator,
-                                AbcImport::createSyntax);
+    TimeSamplingType tst( 1.0 / 96.0 );
 
-    status = plugin.registerNode("AlembicNode",
-                                AlembicNode::mMayaNodeId,
-                                &AlembicNode::creator,
-                                &AlembicNode::initialize);
+    OSimpleXform foo( out.getTop(), "foo", tst );
 
-    return status;
+    SimpleXformSample s;
+    s.makeIdentity();
+
+    // set the same thing ten times
+    for ( size_t i = 0 ; i < 10 ; ++i )
+    {
+        s.setTranslation( g_trans );
+        foo.getSchema().set( s, i );
+        s.makeIdentity();
+    }
+}
+//-*****************************************************************************
+void readArchive( const std::string &iArchive )
+{
+    IArchive archive( Alembic::AbcCoreHDF5::ReadArchive(), iArchive );
+
+    IObject top = archive.getTop();
+
+    ISimpleXform x( archive.getTop(), "foo" );
+
+    std::cout << x.getName() << " has " << x.getSchema().getNumSamples()
+              << " samples." << std::endl;
+
+    TESTING_ASSERT( x.getSchema().getNumSamples() == 1 );
+
+    TESTING_ASSERT( x.getSchema().getValue( 0 ).getTranslation() == g_trans );
 }
 
-MLL_EXPORT MStatus uninitializePlugin(MObject obj)
+//-*****************************************************************************
+int main(int argc, char **argv)
 {
-    MFnPlugin plugin(obj);
+    const std::string &iArchive( "constantSimpleXformSamples.abc" );
+    writeArchive( iArchive );
+    readArchive( iArchive );
 
-    MStatus status;
-
-    status = plugin.deregisterCommand("AlembicImport");
-    status = plugin.deregisterNode(AlembicNode::mMayaNodeId);
-
-    return status;
+    return 0;
 }

@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2011,
+// Copyright (c) 2009-2010,
 //  Sony Pictures Imageworks, Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -34,44 +34,69 @@
 //
 //-*****************************************************************************
 
-#include <maya/MFnPlugin.h>
-#include <maya/MObject.h>
+#include <Alembic/Abc/All.h>
+#include <Alembic/AbcCoreHDF5/All.h>
+#include <boost/random.hpp>
+#include "Assert.h"
 
-#include "AlembicNode.h"
-#include "AbcImport.h"
+#include <ImathMath.h>
 
-const MTypeId AlembicNode::mMayaNodeId(0x00082697);
+#include <limits>
 
-#ifdef PLATFORM_WINDOWS
-  #define MLL_EXPORT __declspec(dllexport)
-#else
-  #define MLL_EXPORT
-#endif
+namespace Abc = Alembic::Abc;
+using namespace Abc;
 
-MLL_EXPORT MStatus initializePlugin(MObject obj)
+
+//-*****************************************************************************
+void simpleTestOut( const std::string &iArchiveName )
 {
-    MFnPlugin plugin(obj, "Sony Pictures Imageworks", "1.0", "Any");
+    OArchive archive( Alembic::AbcCoreHDF5::WriteArchive(),
+                      iArchiveName );
+    OObject archiveTop( archive, kTop );
 
-    MStatus status = plugin.registerCommand("AbcImport",
-                                AbcImport::creator,
-                                AbcImport::createSyntax);
+    OObject c0( archiveTop, "c0" );
+    OCompoundProperty c0Props = c0.getProperties();
 
-    status = plugin.registerNode("AlembicNode",
-                                AlembicNode::mMayaNodeId,
-                                &AlembicNode::creator,
-                                &AlembicNode::initialize);
 
-    return status;
+    OInt32ArrayProperty i32ap( c0Props, "i32ap" );
+
+    boost::shared_ptr<std::vector<int32_t> > vptr( new std::vector<int32_t>( 50, 4 ) );
+
+    Int32ArraySample samp( *vptr );
+
+    i32ap.set( samp );
 }
 
-MLL_EXPORT MStatus uninitializePlugin(MObject obj)
+//-*****************************************************************************
+void simpleTestIn( const std::string &iArchiveName )
 {
-    MFnPlugin plugin(obj);
+    IArchive archive( Alembic::AbcCoreHDF5::ReadArchive(),
+                      iArchiveName, ErrorHandler::kThrowPolicy );
 
-    MStatus status;
+    IObject archiveTop = archive.getTop();
 
-    status = plugin.deregisterCommand("AlembicImport");
-    status = plugin.deregisterNode(AlembicNode::mMayaNodeId);
+    IObject c0( archiveTop, "c0" );
+    ICompoundProperty c0Props = c0.getProperties();
 
-    return status;
+    IInt32ArrayProperty i32ap( c0Props, "i32ap" );
+
+    Int32ArraySamplePtr sptr = i32ap.getValue();
+
+    for ( int32_t i = 0 ; i < 50 ; ++i )
+    {
+        TESTING_ASSERT( 4 == (*sptr)[i] );
+        //std::cout << (*sptr)[i] << std::endl;
+    }
+
+}
+
+//-*****************************************************************************
+int main( int argc, char *argv[] )
+{
+    const std::string arkive( "typedArraySample.abc" );
+
+    simpleTestOut( arkive );
+    simpleTestIn( arkive );
+
+    return 0;
 }

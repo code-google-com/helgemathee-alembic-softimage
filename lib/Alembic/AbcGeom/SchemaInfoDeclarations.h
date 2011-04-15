@@ -79,6 +79,15 @@ struct STDEF                                                            \
 //! elaborate typeid
 
 //-*****************************************************************************
+// Curve
+ALEMBIC_ABCGEOM_DECLARE_SCHEMA_INFO( "AbcGeom_Curve_v1",
+                                     ".geom",
+                                     CurvesSchemaInfo );
+
+#define ALEMBIC_ABCGEOM_CURVE_SCHEMA (CurvesSchemaInfo::title())
+
+
+//-*****************************************************************************
 // PolyMesh
 ALEMBIC_ABCGEOM_DECLARE_SCHEMA_INFO( "AbcGeom_PolyMesh_v1",
                                      ".geom",
@@ -104,7 +113,7 @@ ALEMBIC_ABCGEOM_DECLARE_SCHEMA_INFO( "AbcGeom_Points_v1",
 
 //-*****************************************************************************
 // Xform
-ALEMBIC_ABCGEOM_DECLARE_SCHEMA_INFO( "AbcGeom_Xform_v1",
+ALEMBIC_ABCGEOM_DECLARE_SCHEMA_INFO( "AbcGeom_Xform_v2",
                                      ".xform",
                                      XformSchemaInfo );
 

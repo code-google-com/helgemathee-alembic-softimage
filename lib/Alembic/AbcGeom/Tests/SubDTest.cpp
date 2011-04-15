@@ -123,6 +123,21 @@ void Example1_MeshOut()
     color_val.z = 1.0;
     color.set( color_samp );
 
+    C3f color_val( 1.0, 0.0, 0.0 );
+
+    OCompoundProperty arbParams = mesh.getArbGeomParams();
+    C3fArraySample val_samp( &color_val, 1 );
+
+    OC3fGeomParam color( arbParams, "color", false, kConstantScope, 1 );
+    OC3fGeomParam::Sample color_samp( val_samp, kConstantScope );
+
+    // write red
+    color.set( color_samp, OSampleSelector(0, 0.0) );
+
+    // now purple
+    color_val.z = 1.0;
+    color.set( color_samp, OSampleSelector(1, 1.0) );
+
     std::cout << "Writing: " << archive.getName() << std::endl;
 }
 

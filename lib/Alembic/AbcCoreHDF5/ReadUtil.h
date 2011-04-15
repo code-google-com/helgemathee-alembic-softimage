@@ -118,6 +118,10 @@ ReadTimeSamples( hid_t iParent,
 
 using namespace ALEMBIC_VERSION_NS;
 
+} // End namespace ALEMBIC_VERSION_NS
+
+using namespace ALEMBIC_VERSION_NS;
+
 } // End namespace AbcCoreHDF5
 } // End namespace Alembic
 

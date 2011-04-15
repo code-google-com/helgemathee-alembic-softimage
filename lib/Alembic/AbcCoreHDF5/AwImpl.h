@@ -58,6 +58,8 @@ private:
     AwImpl( const std::string &iFileName,
             const AbcA::MetaData &iMetaData );
 
+    AwImpl( const AwImpl &iCopy );
+
 public:
     virtual ~AwImpl();
 

@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2011,
+// Copyright (c) 2009-2010,
 //  Sony Pictures Imageworks, Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -34,44 +34,26 @@
 //
 //-*****************************************************************************
 
-#include <maya/MFnPlugin.h>
-#include <maya/MObject.h>
+#ifndef _Alembic_AbcGeom_Tests_CurvesData_h_
+#define _Alembic_AbcGeom_Tests_CurvesData_h_
 
-#include "AlembicNode.h"
-#include "AbcImport.h"
+#include <Alembic/AbcGeom/All.h>
 
-const MTypeId AlembicNode::mMayaNodeId(0x00082697);
+namespace Abc = Alembic::Abc;
 
-#ifdef PLATFORM_WINDOWS
-  #define MLL_EXPORT __declspec(dllexport)
-#else
-  #define MLL_EXPORT
+//-*****************************************************************************
+// This data is used by both the PolyMesh and SubD tests.
+extern const size_t g_numCurves;
+extern const size_t g_totalVerts;
+extern const Abc::int32_t g_numVerts[];
+extern const Abc::float32_t g_verts[];
+
+extern const size_t g_numWidths;
+extern const Abc::float32_t g_widths[];
+
+extern const Abc::float32_t g_uvs[];
+
+
+//-*******************************
+
 #endif
-
-MLL_EXPORT MStatus initializePlugin(MObject obj)
-{
-    MFnPlugin plugin(obj, "Sony Pictures Imageworks", "1.0", "Any");
-
-    MStatus status = plugin.registerCommand("AbcImport",
-                                AbcImport::creator,
-                                AbcImport::createSyntax);
-
-    status = plugin.registerNode("AlembicNode",
-                                AlembicNode::mMayaNodeId,
-                                &AlembicNode::creator,
-                                &AlembicNode::initialize);
-
-    return status;
-}
-
-MLL_EXPORT MStatus uninitializePlugin(MObject obj)
-{
-    MFnPlugin plugin(obj);
-
-    MStatus status;
-
-    status = plugin.deregisterCommand("AlembicImport");
-    status = plugin.deregisterNode(AlembicNode::mMayaNodeId);
-
-    return status;
-}

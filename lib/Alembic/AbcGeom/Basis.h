@@ -1,7 +1,7 @@
 //-*****************************************************************************
 //
 // Copyright (c) 2009-2011,
-//  Sony Pictures Imageworks, Inc. and
+//  Sony Pictures Imageworks Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
 // All rights reserved.
@@ -16,7 +16,7 @@
 // in the documentation and/or other materials provided with the
 // distribution.
 // *       Neither the name of Sony Pictures Imageworks, nor
-// Industrial Light & Magic nor the names of their contributors may be used
+// Industrial Light & Magic, nor the names of their contributors may be used
 // to endorse or promote products derived from this software without specific
 // prior written permission.
 //
@@ -34,44 +34,28 @@
 //
 //-*****************************************************************************
 
-#include <maya/MFnPlugin.h>
-#include <maya/MObject.h>
+#ifndef _Alembic_AbcGeom_Basis_h_
+#define _Alembic_AbcGeom_Basis_h_
 
-#include "AlembicNode.h"
-#include "AbcImport.h"
+#include <string>
 
-const MTypeId AlembicNode::mMayaNodeId(0x00082697);
+namespace Alembic {
+namespace AbcGeom {
 
-#ifdef PLATFORM_WINDOWS
-  #define MLL_EXPORT __declspec(dllexport)
-#else
-  #define MLL_EXPORT
+enum BasisType {
+  kNoBasis = 0,
+  kBezierBasis = 1,
+  kBsplineBasis = 2,
+  kCatmullromBasis = 3,
+  kHermiteBasis = 4,
+  kPowerBasis = 5
+};
+
+std::string GetBasisNameFromBasisType( const BasisType basis );
+
+int GetStepFromBasisType(const BasisType basis );
+
+}
+}
+
 #endif
-
-MLL_EXPORT MStatus initializePlugin(MObject obj)
-{
-    MFnPlugin plugin(obj, "Sony Pictures Imageworks", "1.0", "Any");
-
-    MStatus status = plugin.registerCommand("AbcImport",
-                                AbcImport::creator,
-                                AbcImport::createSyntax);
-
-    status = plugin.registerNode("AlembicNode",
-                                AlembicNode::mMayaNodeId,
-                                &AlembicNode::creator,
-                                &AlembicNode::initialize);
-
-    return status;
-}
-
-MLL_EXPORT MStatus uninitializePlugin(MObject obj)
-{
-    MFnPlugin plugin(obj);
-
-    MStatus status;
-
-    status = plugin.deregisterCommand("AlembicImport");
-    status = plugin.deregisterNode(AlembicNode::mMayaNodeId);
-
-    return status;
-}

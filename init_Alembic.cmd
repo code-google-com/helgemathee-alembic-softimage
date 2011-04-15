@@ -7,7 +7,11 @@ goto :eof
 
 setlocal
 if /i "%1" == "db:" (
-	set DB=_db
+REM ******************************************************************************************
+REM let's assume we don't need to debug IlmBase, boost, or zlib and just use the non-debug
+REM libs even when building debug. This way we don't have to nuke the projects to switch.
+REM ******************************************************************************************
+:	set DB=_db
 	shift
 ) ELSE (
 	set DB=
@@ -30,15 +34,22 @@ set BOOST_ROOT=%rootOut%\boost
 set ILMBASE_ROOT=%platOut%\IlmBase
 set OPENEXR_ROOT=%ALEMBIC_ROOT%\contrib\openexr-1.6.1
 set HDF5_ROOT=%ALEMBIC_ROOT%\contrib\hdf5-1.8.5-patch1\src
+set MAYA_ROOT=%ALEMBIC_ROOT%\contrib\maya2011
+
+REM ******************************************************************************************
+REM We always use the MT libraries, so comment out the next line if you want MTd libs for debug
+REM ******************************************************************************************
+set Luxology_flags=/MT /U _DEBUG
 
 REM ******************************************************************************************
 REM Corrections to vars in bootstrap script
 REM ******************************************************************************************
-set warnFlags=/wd4267 /wd4800 /wd4018 /wd4244
+set warnFlags=/wd4267 /wd4800 /wd4018 /wd4244 %Luxology_flags%
 set ccflags=%warnFlags% /D_WINDOWS /W3 /Zm1000
 set cppflags=%ccflags% /EHsc /GR
 
-set BASE_ARGS=--disable-prman --disable-maya --generator=%Generator%
+REM set BASE_ARGS=--disable-prman --disable-maya --generator=%Generator%
+set BASE_ARGS=--disable-prman --with-maya=%MAYA_ROOT% --generator=%Generator%
 set HDF_ARGS=--hdf5_include_dir=%rootOut%\hdf5_include --hdf5_hdf5_library=%platOut%\hdf5\bin\RelWithDebInfo\hdf5_hl.lib
 set ILM_ARGS=--ilmbase_include_dir=%ILMBASE_ROOT%\include\OpenEXR --ilmbase_imath_library=%ILMBASE_ROOT%\lib%db%\Imath.lib
 set BOOST_ARGS=--boost_include_dir=%BOOST_ROOT%\include\boost-1_42 --boost_program_options_library=%platOut%\boost%db%\lib\libboost_program_options-vc90-mt-1_42.lib
