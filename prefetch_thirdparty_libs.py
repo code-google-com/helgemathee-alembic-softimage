@@ -1,10 +1,33 @@
 import os
-import urllib
+import urllib2
 import zipfile
 import tarfile
 
 # set a good umask
 os.umask(0002)
+
+def download(url,file):
+	request = urllib2.urlopen(url)
+	meta = request.info()
+	file_size = int(meta.getheaders("Content-Length")[0])
+	file_name = file.rpartition("\\")[2]
+	print "Downloading: %s Bytes: %s" % (file_name, file_size)
+	output = open(file,'wb')
+
+	file_size_dl = 0
+	block_sz = 8192
+	while True:
+		buffer = request.read(block_sz)
+		if not buffer:
+			break
+
+		file_size_dl += len(buffer)
+		output.write(buffer)
+		status = r"%10d  [%3.2f%%]" % (file_size_dl, file_size_dl * 100. / file_size)
+		status = status + chr(8)*(len(status)+1)
+		print status,	
+	output.close()
+	print('done.')
 
 # check environment variables
 if not os.environ.has_key("ALEMBIC_ROOT") or not os.environ.has_key("ALEMBIC_OUT"):
@@ -17,28 +40,19 @@ if not os.path.exists(thirdPartyFolder):
 
 # check if we need to download boost
 if not os.path.exists(os.path.join(thirdPartyFolder,"boost_1_42_0.tar.gz")):
-	print("Downloading boost 1.42.0, this can take a couple of minutes...")
-	urllib.urlretrieve("http://downloads.sourceforge.net/project/boost/boost/1.42.0/boost_1_42_0.tar.gz", os.path.join(thirdPartyFolder,"boost_1_42_0.tar.gz"))
+	download("http://downloads.sourceforge.net/project/boost/boost/1.42.0/boost_1_42_0.tar.gz", os.path.join(thirdPartyFolder,"boost_1_42_0.tar.gz"))
 
 # check if we need to download HDF5
 if not os.path.exists(os.path.join(thirdPartyFolder,"hdf5-1.8.7.tar")):
-	print("Downloading hdf5 1.8.7, this can take a couple of minutes...")
-	urllib.urlretrieve("http://www.hdfgroup.org/ftp/HDF5/prev-releases/hdf5-1.8.7/src/hdf5-1.8.7.tar", os.path.join(thirdPartyFolder,"hdf5-1.8.7.tar"))
+	download("http://www.hdfgroup.org/ftp/HDF5/prev-releases/hdf5-1.8.7/src/hdf5-1.8.7.tar", os.path.join(thirdPartyFolder,"hdf5-1.8.7.tar"))
 
 # check if we need to download ilmbase
 if not os.path.exists(os.path.join(thirdPartyFolder,"ilmbase-1.0.2.tar.gz")):
-	print("Downloading ilmbase 1.0.2, this can take a couple of minutes...")
-	urllib.urlretrieve("http://download.savannah.nongnu.org/releases/openexr/ilmbase-1.0.2.tar.gz", os.path.join(thirdPartyFolder,"ilmbase-1.0.2.tar.gz"))
-
-# check if we need to download openexr
-if not os.path.exists(os.path.join(thirdPartyFolder,"openexr-1.6.1.tar.gz")):
-	print("Downloading openexr 1.6.1, this can take a couple of minutes...")
-	urllib.urlretrieve("http://download.savannah.nongnu.org/releases/openexr/openexr-1.6.1.tar.gz", os.path.join(thirdPartyFolder,"openexr-1.6.1.tar.gz"))
+	download("http://download.savannah.nongnu.org/releases/openexr/ilmbase-1.0.2.tar.gz", os.path.join(thirdPartyFolder,"ilmbase-1.0.2.tar.gz"))
 
 # check if we need to download zlib
 if not os.path.exists(os.path.join(thirdPartyFolder,"zlib-1.2.5.tar.gz")):
-	print("Downloading zlib 1.2.5, this can take a couple of minutes...")
-	urllib.urlretrieve("http://zlib.net/zlib-1.2.5.tar.gz", os.path.join(thirdPartyFolder,"zlib-1.2.5.tar.gz"))
+	download("http://zlib.net/zlib-1.2.5.tar.gz", os.path.join(thirdPartyFolder,"zlib-1.2.5.tar.gz"))
 
 # check if we need to extract boost
 if not os.path.exists(os.path.join(thirdPartyFolder,"boost_1_42_0")):
@@ -56,12 +70,6 @@ if not os.path.exists(os.path.join(thirdPartyFolder,"hdf5-1.8.7")):
 if not os.path.exists(os.path.join(thirdPartyFolder,"ilmbase-1.0.2")):
 	tar = tarfile.open(os.path.join(thirdPartyFolder,"ilmbase-1.0.2.tar.gz"),'r:gz')
 	print("Extracting ilmbase, this may take a couple of minutes...")
-	tar.extractall(thirdPartyFolder)
-
-# check if we need to extract openexr
-if not os.path.exists(os.path.join(thirdPartyFolder,"openexr-1.6.1")):
-	tar = tarfile.open(os.path.join(thirdPartyFolder,"openexr-1.6.1.tar.gz"),'r:gz')
-	print("Extracting openexr, this may take a couple of minutes...")
 	tar.extractall(thirdPartyFolder)
 
 # check if we need to extract zlib
