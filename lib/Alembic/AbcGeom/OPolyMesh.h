@@ -251,8 +251,6 @@ public:
 
     Abc::OCompoundProperty getArbGeomParams();
 
-    Abc::OCompoundProperty getArbGeomParams();
-
     //-*************************************************************************
     // ABC BASE MECHANISMS
     // These functions are used by Abc to deal with errors, rewrapping,

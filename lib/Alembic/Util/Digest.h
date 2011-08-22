@@ -39,10 +39,7 @@
 
 #include <Alembic/Util/Foundation.h>
 #include <boost/format.hpp>
-
-#ifdef _WIN32
-   #include <msvc/stdint.h>
-#endif 
+#include  <boost/cstdint.hpp>
 
 namespace Alembic {
 namespace Util {
@@ -56,8 +53,8 @@ struct Digest : public boost::totally_ordered<Digest>
 {
     union
     {
-        uint8_t d[16];
-        uint64_t words[2];
+        boost::uint8_t d[16];
+        boost::uint64_t words[2];
     };
 
     Digest() { words[0] = words[1] = 0; }
@@ -74,8 +71,8 @@ struct Digest : public boost::totally_ordered<Digest>
         return *this;
     }
 
-    uint8_t& operator[]( size_t i ) { return d[i]; }
-    uint8_t operator[]( size_t i ) const { return d[i]; }
+    boost::uint8_t& operator[]( size_t i ) { return d[i]; }
+    boost::uint8_t operator[]( size_t i ) const { return d[i]; }
 
     void print( std::ostream &ostr ) const
     {
