@@ -6,6 +6,8 @@ echo ALEMBIC_ROOT and ALEMBIC_OUT must be defined!!!
 goto :eof
 :AlembicDefined
 
+python "%ALEMBIC_ROOT%\prefetch_thirdparty_libs.py"
+
 if /i "%1" == "db:" (
 	set DB=_db
 	set config=Debug
@@ -23,21 +25,33 @@ if "%PROCESSOR_ARCHITECTURE%" == "AMD64" (
 	set arch=Win32
 )
 
-REM ***************************************************************
-REM IlmBase SLN & VCPROJ files *must* be modified for static libs
-REM ***************************************************************
-
-set srcRoot=%ALEMBIC_ROOT%\contrib\ilmbase-1.0.2
-set srcDir=%srcRoot%\vc\vc8\IlmBase
+set srcRoot=%ALEMBIC_ROOT%\thirdparty\ilmbase-1.0.2
+set srcDir=%srcRoot%\vc\vc9\IlmBase
 set outDir=%ALEMBIC_OUT%\%SYS%\ilmbase
 set outLib=%outDir%\lib%DB%
-set IncDir=%outDir%\include\OpenEXR
+set IncDir=%outDir%\include
 
-if NOT exist "%IncDir%"		md %IncDir%
+python "%ALEMBIC_ROOT%\convert_ilmbase_vcprojs.py"
+
+if not EXIST "%ALEMBIC_ROOT%\thirdparty\ilmbase-1.0.2\vc\vc9" (
+	xcopy %ALEMBIC_ROOT%\thirdparty\ilmbase-1.0.2\vc\vc8 %ALEMBIC_ROOT%\thirdparty\ilmbase-1.0.2\vc\vc9 /S /I
+	vcbuild /nologo %ALEMBIC_ROOT%\thirdparty\ilmbase-1.0.2\vc\vc9\IlmBase\Half\Half.vcproj /upgrade
+	vcbuild /nologo %ALEMBIC_ROOT%\thirdparty\ilmbase-1.0.2\vc\vc9\IlmBase\Iex\Iex.vcproj /upgrade
+	vcbuild /nologo %ALEMBIC_ROOT%\thirdparty\ilmbase-1.0.2\vc\vc9\IlmBase\IlmThread\IlmThread.vcproj /upgrade
+	vcbuild /nologo %ALEMBIC_ROOT%\thirdparty\ilmbase-1.0.2\vc\vc9\IlmBase\Imath\Imath.vcproj /upgrade
+)
+
+
 if NOT exist "%outLib%"		md %outLib%
+if NOT exist "%IncDir%" md %IncDir%
 
 @echo on
-vcbuild /nologo %1 %2 %3 %4 %5 %6 %srcDir%\IlmBase.sln "%config%|%arch%"
+vcbuild /nologo %1 %2 %3 %4 %5 %6 %srcDir%\Half\Half.vcproj "%config%|%arch%"
+vcbuild /nologo %1 %2 %3 %4 %5 %6 %srcDir%\Iex\Iex.vcproj "%config%|%arch%"
+vcbuild /nologo %1 %2 %3 %4 %5 %6 %srcDir%\IlmThread\IlmThread.vcproj "%config%|%arch%"
+vcbuild /nologo %1 %2 %3 %4 %5 %6 %srcDir%\Imath\Imath.vcproj "%config%|%arch%"
+
+@echo off
 copy %srcDir%\%arch%\%config%\*.lib %outLib%
 copy %srcRoot%\Half\half*.h 	%IncDir%
 copy %srcRoot%\Iex\*.h 		%IncDir%

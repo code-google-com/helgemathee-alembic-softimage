@@ -243,6 +243,8 @@ def configureCMakeZlib( cmake_args ):
     cmake_extra_args = ''
 
     srcdir = cmake_args[0]
+    
+    print(cmake_args)
 
     try:
         cmake_extra_args+=' -D ZLIB_INCLUDE_DIR:PATH="%s"' % cmake_args[1]
