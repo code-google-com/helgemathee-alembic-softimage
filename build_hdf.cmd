@@ -34,6 +34,7 @@ if NOT exist "%outDir%\include" (
 	xcopy %ALEMBIC_ROOT%\thirdparty\hdf5-1.8.7\c++\src\*.h %outDir%\include
 	xcopy %ALEMBIC_ROOT%\thirdparty\hdf5-1.8.7\hl\src\*.h %outDir%\include
 	xcopy %ALEMBIC_ROOT%\thirdparty\hdf5-1.8.7\windows\src\*.h %outDir%\include
+	xcopy %ALEMBIC_ROOT%\thirdparty\hdf5-1.8.7\src\*.h %outDir%\include
 )
 
 set cmake_flags=-D CMAKE_C_FLAGS=" /MT " -D CMAKE_CXX_FLAGS=" /MT "
