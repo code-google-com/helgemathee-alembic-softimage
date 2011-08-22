@@ -16,16 +16,19 @@ vcprojs = [
 	"Imath"
 ]
 
+versions = ["vc7", "vc8", "vc9"]
 for i in range(0,len(vcprojs)):
-	vcproj = os.path.join(thirdPartyFolder,"ilmbase-1.0.2","vc","vc8","IlmBase",vcprojs[i],vcprojs[i]+".vcproj")
-	content = open(vcproj).read()
-	content = content.replace("OPENEXR;","")
-	content = content.replace("OPENEXR","")
-	content = content.replace("ConfigurationType=\"2\"","ConfigurationType=\"4\"")
-	content = content.replace("RuntimeLibrary=\"2\"","RuntimeLibrary=\"0\"")
-	content = content.replace("RuntimeLibrary=\"3\"","RuntimeLibrary=\"1\"")
-	content = content.replace("VCPostBuildEventTool","DisabledTool")
-	content = content.replace("OutputDirectory=\"..\$(PlatformName)\$(ConfigurationName)\"","OutputDirectory=\""+os.environ["outLib"]+"\"")
+	for j in range(0,3):
 	
-	open(vcproj,'w').write(content)
-	print("Converted "+vcproj+".")
+		vcproj = os.path.join(thirdPartyFolder,"ilmbase-1.0.2","vc",versions[j],"IlmBase",vcprojs[i],vcprojs[i]+".vcproj")
+		content = open(vcproj).read()
+		content = content.replace("OPENEXR;","")
+		content = content.replace("OPENEXR","")
+		content = content.replace("ConfigurationType=\"2\"","ConfigurationType=\"4\"")
+		content = content.replace("RuntimeLibrary=\"2\"","RuntimeLibrary=\"0\"")
+		content = content.replace("RuntimeLibrary=\"3\"","RuntimeLibrary=\"1\"")
+		content = content.replace("VCPostBuildEventTool","DisabledTool")
+		content = content.replace("OutputDirectory=\"..\$(PlatformName)\$(ConfigurationName)\"","OutputDirectory=\""+os.environ["outLib"]+"\"")
+	
+		open(vcproj,'w').write(content)
+		print("-------------> Converted "+vcproj+".")

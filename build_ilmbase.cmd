@@ -11,10 +11,12 @@ python "%ALEMBIC_ROOT%\prefetch_thirdparty_libs.py"
 if /i "%1" == "db:" (
 	set DB=_db
 	set config=Debug
+	set configFolder=Debug
 	shift
 ) ELSE (
 	set DB=
 	set config=Release
+	set configFolder=RelWithDebInfo
 )
 
 if "%PROCESSOR_ARCHITECTURE%" == "AMD64" (
@@ -31,8 +33,6 @@ set outDir=%ALEMBIC_OUT%\%SYS%\ilmbase
 set outLib=%outDir%\lib%DB%
 set IncDir=%outDir%\include
 
-python "%ALEMBIC_ROOT%\convert_ilmbase_vcprojs.py"
-
 if not EXIST "%ALEMBIC_ROOT%\thirdparty\ilmbase-1.0.2\vc\vc9" (
 	xcopy %ALEMBIC_ROOT%\thirdparty\ilmbase-1.0.2\vc\vc8 %ALEMBIC_ROOT%\thirdparty\ilmbase-1.0.2\vc\vc9 /S /I
 	vcbuild /nologo %ALEMBIC_ROOT%\thirdparty\ilmbase-1.0.2\vc\vc9\IlmBase\Half\Half.vcproj /upgrade
@@ -41,6 +41,7 @@ if not EXIST "%ALEMBIC_ROOT%\thirdparty\ilmbase-1.0.2\vc\vc9" (
 	vcbuild /nologo %ALEMBIC_ROOT%\thirdparty\ilmbase-1.0.2\vc\vc9\IlmBase\Imath\Imath.vcproj /upgrade
 )
 
+python "%ALEMBIC_ROOT%\convert_ilmbase_vcprojs.py"
 
 if NOT exist "%outLib%"		md %outLib%
 if NOT exist "%IncDir%" md %IncDir%

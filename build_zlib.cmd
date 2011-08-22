@@ -11,10 +11,12 @@ python "%ALEMBIC_ROOT%\prefetch_thirdparty_libs.py"
 if /i "%1" == "db:" (
 	set DB=_db
 	set config=Debug
+	set cmake_flags=-D CMAKE_C_FLAGS_DEBUG="/D_DEBUG /MTd /Zi  /Ob0 /Od /RTC1" -D BUILD_SHARED_LIBS=OFF
 	shift
 ) ELSE (
 	set DB=
 	set config=RelWithDebInfo
+	set cmake_flags=-D CMAKE_C_FLAGS_RELWITHDEBINFO="/MT /Zi /O2 /Ob1 /D NDEBUG" -D BUILD_SHARED_LIBS=OFF
 )
 
 if "%PROCESSOR_ARCHITECTURE%" == "AMD64" (
@@ -31,11 +33,9 @@ set outDir=%ALEMBIC_OUT%\%SYS%\zlib
 if NOT exist "%outDir%" md %outDir%
 if exist "%ALEMBIC_ROOT%\thirdparty\zlib-1.2.5\zconf.h" del "%ALEMBIC_ROOT%\thirdparty\zlib-1.2.5\zconf.h"
 
-set build_flags=-D CMAKE_C_FLAGS=" /MT " -D CMAKE_CXX_FLAGS=" /MT " -D BUILD_SHARED_LIBS=FALSE
-
 @echo on
 pushd %outDir%
-cmake -G %Generator% %build_flags% %ALEMBIC_ROOT%\thirdparty\zlib-1.2.5
+cmake -G %Generator% %cmake_flags% %ALEMBIC_ROOT%\thirdparty\zlib-1.2.5
 vcbuild /nologo %1 %2 %3 %4 %5 %6 %ALEMBIC_OUT%\%SYS%\zlib\zlib.vcproj "%config%|%arch%"
 copy %ALEMBIC_OUT%\%SYS%\zlib\zconf.h %ALEMBIC_ROOT%\thirdparty\zlib-1.2.5
 @popd

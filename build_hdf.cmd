@@ -11,10 +11,12 @@ python "%ALEMBIC_ROOT%\prefetch_thirdparty_libs.py"
 if /i "%1" == "db:" (
 	set DB=_db
 	set config=Debug
+	set cmake_flags=-D CMAKE_C_FLAGS_DEBUG="/D_DEBUG /MTd /Zi  /Ob0 /Od /RTC1" -D BUILD_SHARED_LIBS=OFF
 	shift
 ) ELSE (
 	set DB=
 	set config=RelWithDebInfo
+	set cmake_flags=-D CMAKE_C_FLAGS_RELWITHDEBINFO="/MT /Zi /O2 /Ob1 /D NDEBUG" -D BUILD_SHARED_LIBS=OFF
 )
 
 if "%PROCESSOR_ARCHITECTURE%" == "AMD64" (
@@ -37,10 +39,8 @@ if NOT exist "%outDir%\include" (
 	xcopy %ALEMBIC_ROOT%\thirdparty\hdf5-1.8.7\src\*.h %outDir%\include
 )
 
-set cmake_flags=-D CMAKE_C_FLAGS=" /MT " -D CMAKE_CXX_FLAGS=" /MT "
-
 @echo on
 pushd %outDir%
-cmake -G %Generator% -D HDF5_BUILD_HL_LIB:BOOL=ON %cmake_flags% %ALEMBIC_ROOT%\thirdparty\hdf5-1.8.7
+cmake -G %Generator% -D BUILD_SHARED_LIBS=OFF -D HDF5_BUILD_HL_LIB:BOOL=ON %cmake_flags% %ALEMBIC_ROOT%\thirdparty\hdf5-1.8.7
 vcbuild /nologo %1 %2 %3 %4 %5 %6 HDF5.sln "%config%|%arch%"
 @popd
