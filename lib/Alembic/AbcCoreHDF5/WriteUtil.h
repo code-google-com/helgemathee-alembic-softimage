@@ -129,15 +129,13 @@ WriteTimeSampling( hid_t iGroup,
                    const AbcA::TimeSampling &iTsmp );
 
 } // End namespace ALEMBIC_VERSION_NS
-
-using namespace ALEMBIC_VERSION_NS;
-
-} // End namespace ALEMBIC_VERSION_NS
-
 using namespace ALEMBIC_VERSION_NS;
 
 } // End namespace AbcCoreHDF5
+using namespace AbcCoreHDF5;
+
 } // End namespace Alembic
+using namespace Alembic;
 
 #endif
 
