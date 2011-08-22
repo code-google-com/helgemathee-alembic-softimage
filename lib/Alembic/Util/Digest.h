@@ -40,6 +40,10 @@
 #include <Alembic/Util/Foundation.h>
 #include <boost/format.hpp>
 
+#ifdef _WIN32
+   #include <msvc/stdint.h>
+#endif 
+
 namespace Alembic {
 namespace Util {
 namespace ALEMBIC_VERSION_NS {
