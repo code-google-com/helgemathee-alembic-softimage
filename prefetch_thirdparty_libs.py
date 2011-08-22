@@ -27,7 +27,7 @@ def download(url,file):
 		status = status + chr(8)*(len(status)+1)
 		print status,	
 	output.close()
-	print('done.')
+	print('done.                                      ')
 
 # check environment variables
 if not os.environ.has_key("ALEMBIC_ROOT") or not os.environ.has_key("ALEMBIC_OUT"):
@@ -48,7 +48,7 @@ if not os.path.exists(os.path.join(thirdPartyFolder,"hdf5-1.8.7.tar")):
 
 # check if we need to download ilmbase
 if not os.path.exists(os.path.join(thirdPartyFolder,"ilmbase-1.0.2.tar.gz")):
-	download("http://download.savannah.nongnu.org/releases/openexr/ilmbase-1.0.2.tar.gz", os.path.join(thirdPartyFolder,"ilmbase-1.0.2.tar.gz"))
+	download("http://mirrors.zerg.biz/nongnu/openexr/ilmbase-1.0.2.tar.gz", os.path.join(thirdPartyFolder,"ilmbase-1.0.2.tar.gz"))
 
 # check if we need to download zlib
 if not os.path.exists(os.path.join(thirdPartyFolder,"zlib-1.2.5.tar.gz")):
