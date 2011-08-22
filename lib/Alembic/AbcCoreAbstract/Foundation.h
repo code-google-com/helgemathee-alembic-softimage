@@ -37,12 +37,12 @@
 #ifndef _Alembic_AbcCoreAbstract_Foundation_h_
 #define _Alembic_AbcCoreAbstract_Foundation_h_
 
-#include <Alembic/Util/All.h>
-
 #include <boost/smart_ptr.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/operators.hpp>
 #include <boost/format.hpp>
+
+#include <Alembic/Util/All.h>
 
 #include <limits>
 #include <utility>
