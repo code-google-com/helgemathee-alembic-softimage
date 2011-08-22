@@ -86,7 +86,7 @@ void simpleTestOut()
 
         TimeSampling ts(TimeSamplingType( TimeSamplingType::kAcyclic ),
             timeSamps);
-        uint32_t tsidx = archive.addTimeSampling(ts);
+        boost::uint32_t tsidx = archive.addTimeSampling(ts);
 
         OV3dArrayProperty pointy(
             OCompoundProperty( spaniard, kTop ),
