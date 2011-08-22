@@ -27,19 +27,15 @@ if "%PROCESSOR_ARCHITECTURE%" == "AMD64" (
 	set Generator="Visual Studio 9 2008"
 )
 
-set outDir=%ALEMBIC_OUT%\%SYS%\hdf5
+set outDir=%ALEMBIC_OUT%\%SYS%\zlib
 if NOT exist "%outDir%" md %outDir%
-if NOT exist "%outDir%\include" (
-	md %outDir%\include
-	xcopy %ALEMBIC_ROOT%\thirdparty\hdf5-1.8.7\c++\src\*.h %outDir%\include
-	xcopy %ALEMBIC_ROOT%\thirdparty\hdf5-1.8.7\hl\src\*.h %outDir%\include
-	xcopy %ALEMBIC_ROOT%\thirdparty\hdf5-1.8.7\windows\src\*.h %outDir%\include
-)
+if exist "%ALEMBIC_ROOT%\thirdparty\zlib-1.2.5\zconf.h" del "%ALEMBIC_ROOT%\thirdparty\zlib-1.2.5\zconf.h"
 
-set cmake_flags=-D CMAKE_C_FLAGS=" /MT " -D CMAKE_CXX_FLAGS=" /MT "
+set build_flags=-D CMAKE_C_FLAGS=" /MT " -D CMAKE_CXX_FLAGS=" /MT " -D BUILD_SHARED_LIBS=FALSE
 
 @echo on
 pushd %outDir%
-cmake -G %Generator% -D HDF5_BUILD_HL_LIB:BOOL=ON %cmake_flags% %ALEMBIC_ROOT%\thirdparty\hdf5-1.8.7
-vcbuild /nologo %1 %2 %3 %4 %5 %6 HDF5.sln "%config%|%arch%"
+cmake -G %Generator% %build_flags% %ALEMBIC_ROOT%\thirdparty\zlib-1.2.5
+vcbuild /nologo %1 %2 %3 %4 %5 %6 %ALEMBIC_OUT%\%SYS%\zlib\zlib.vcproj "%config%|%arch%"
+copy %ALEMBIC_OUT%\%SYS%\zlib\zconf.h %ALEMBIC_ROOT%\thirdparty\zlib-1.2.5
 @popd

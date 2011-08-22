@@ -17,6 +17,8 @@ REM ****************************************************************************
 	set DB=
 )
 
+python "%ALEMBIC_ROOT%\convert_ilmbase_vcprojs.py"
+
 if "%PROCESSOR_ARCHITECTURE%" == "AMD64" (
 	set SYS=i64
 	set ARCH=x64
@@ -27,33 +29,33 @@ if "%PROCESSOR_ARCHITECTURE%" == "AMD64" (
 	set Generator="Visual Studio 9 2008"
 )
 
-set luxSrc=U:\Luxology\source
 set rootOut=%ALEMBIC_OUT%
 set platOut=%rootOut%\%SYS%
-set BOOST_ROOT=%rootOut%\boost
+set BOOST_ROOT=%ALEMBIC_ROOT%\thirdparty\boost-1_42_0
 set ILMBASE_ROOT=%platOut%\IlmBase
-set OPENEXR_ROOT=%ALEMBIC_ROOT%\contrib\openexr-1.6.1
-set HDF5_ROOT=%ALEMBIC_ROOT%\contrib\hdf5-1.8.5-patch1\src
-set MAYA_ROOT=%ALEMBIC_ROOT%\contrib\maya2011
+set OPENEXR_ROOT=%ALEMBIC_ROOT%\thirdparty\openexr-1.6.1
+set HDF5_ROOT=%ALEMBIC_ROOT%\thirdparty\hdf5-1.8.7
+set ZLIB_ROOT=%ALEMBIC_ROOT%\thirdparty\zlib-1.2.5
+
 
 REM ******************************************************************************************
 REM We always use the MT libraries, so comment out the next line if you want MTd libs for debug
 REM ******************************************************************************************
-set Luxology_flags=/MT /U _DEBUG
+set cmake_flags=/MT /U _DEBUG
 
 REM ******************************************************************************************
 REM Corrections to vars in bootstrap script
 REM ******************************************************************************************
-set warnFlags=/wd4267 /wd4800 /wd4018 /wd4244 %Luxology_flags%
+set warnFlags=/wd4267 /wd4800 /wd4018 /wd4244 %cmake_flags%
 set ccflags=%warnFlags% /D_WINDOWS /W3 /Zm1000
 set cppflags=%ccflags% /EHsc /GR
 
-REM set BASE_ARGS=--disable-prman --disable-maya --generator=%Generator%
-set BASE_ARGS=--disable-prman --with-maya=%MAYA_ROOT% --generator=%Generator%
-set HDF_ARGS=--hdf5_include_dir=%rootOut%\hdf5_include --hdf5_hdf5_library=%platOut%\hdf5\bin\RelWithDebInfo\hdf5_hl.lib
-set ILM_ARGS=--ilmbase_include_dir=%ILMBASE_ROOT%\include\OpenEXR --ilmbase_imath_library=%ILMBASE_ROOT%\lib%db%\Imath.lib
-set BOOST_ARGS=--boost_include_dir=%BOOST_ROOT%\include\boost-1_42 --boost_program_options_library=%platOut%\boost%db%\lib\libboost_program_options-vc90-mt-1_42.lib
-set ZLIB_ARGS=--zlib_include_dir=%luxSrc%\extra\zlib125 --zlib_library=%luxSrc%\lib%sys%\zlib125-static%db%.lib
+set BASE_ARGS=--disable-prman --disable-maya --generator=%Generator%
+rem set BASE_ARGS=--disable-prman --with-maya=%MAYA_ROOT% --generator=%Generator%
+set HDF_ARGS=--hdf5_include_dir=%platOut%\hdf5\include --hdf5_hdf5_library=%platOut%\hdf5\bin\RelWithDebInfo\hdf5_hl%db%.lib
+set ILM_ARGS=--ilmbase_include_dir=%ILMBASE_ROOT%\include --ilmbase_imath_library=%ILMBASE_ROOT%\lib%db%\Imath.lib
+set BOOST_ARGS=--boost_include_dir=%platOut%\boost\include\boost-1_42 --boost_program_options_library=%platOut%\boost\lib%db%\libboost_program_options-vc90-mt%db%-1_42.lib
+set ZLIB_ARGS=--zlib_include_dir=%ZLIB_ROOT% --zlib_library=%platOut%\zlib\RelWithDebInfo\zlib%db%.lib
 
 @echo on
 pushd %platOut%
