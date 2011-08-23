@@ -1,0 +1,13 @@
+cmake_minimum_required (VERSION 2.6) 
+
+project (joined) 
+
+file(GLOB_RECURSE Sources ${CMAKE_CURRENT_SOURCE_DIR}/*)
+file(GLOB_RECURSE Includes ${CMAKE_CURRENT_SOURCE_DIR}/*)
+
+SOURCE_GROUP("Source Files" FILES ${Sources})
+SOURCE_GROUP("Header Files" FILES ${Includes})
+
+add_executable( "toFloat" toFloat.cpp )
+add_executable( "eLut" eLut.cpp )
+add_library( ${PROJECT_NAME} STATIC ${Sources} ${Includes})
