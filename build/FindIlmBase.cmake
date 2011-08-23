@@ -41,7 +41,6 @@
 #-******************************************************************************
 #-******************************************************************************
 
-
 IF(NOT DEFINED ILMBASE_ROOT)
     IF ( ${CMAKE_HOST_UNIX} )
         IF( ${DARWIN} )
@@ -63,18 +62,11 @@ ELSE()
   SET( ALEMBIC_ILMBASE_ROOT ${ILMBASE_ROOT} )
 ENDIF()
 
-SET(LIBRARY_PATHS
-    ${ALEMBIC_ILMBASE_ROOT}/lib
-    ~/Library/Frameworks
-    /Library/Frameworks
-    /usr/local/lib
-    /usr/lib
-    /sw/lib
-    /opt/local/lib
-    /opt/csw/lib
-    /opt/lib
-    /usr/freeware/lib64
-)
+IF(NOT DEFINED ILMBASE_ROOT_LIB)
+	SET( ILMBASE_ROOT_LIB "${ILMBASE_ROOT}/lib" )
+ENDIF()
+
+SET(LIBRARY_PATHS ${ILMBASE_ROOT_LIB})
 
 IF( DEFINED ILMBASE_LIBRARY_DIR )
   SET( LIBRARY_PATHS ${ILMBASE_LIBRARY_DIR} ${LIBRARY_PATHS} )
@@ -105,8 +97,8 @@ FIND_PATH( ALEMBIC_ILMBASE_INCLUDE_DIRECTORY ImathMath.h
            NO_CMAKE_SYSTEM_PATH
            DOC "The directory where ImathMath.h resides" )
 
-IF( NOT DEFINED ALEMBIC_ILMBASE_HALF_LIB )
-  FIND_LIBRARY( ALEMBIC_ILMBASE_HALF_LIB Half
+IF( NOT DEFINED ALEMBIC_ILMBASE_JOINED_LIB )
+  FIND_LIBRARY( ALEMBIC_ILMBASE_JOINED_LIB joined
                 PATHS
                 ${LIBRARY_PATHS}
                 NO_DEFAULT_PATH
@@ -114,60 +106,11 @@ IF( NOT DEFINED ALEMBIC_ILMBASE_HALF_LIB )
                 NO_CMAKE_PATH
                 NO_SYSTEM_ENVIRONMENT_PATH
                 NO_CMAKE_SYSTEM_PATH
-                DOC "The Half library" )
+                DOC "The joined ilmbase library" )
 ENDIF()
 
-IF( NOT DEFINED ALEMBIC_ILMBASE_IEX_LIB )
-  FIND_LIBRARY( ALEMBIC_ILMBASE_IEX_LIB Iex
-                PATHS
-                ${LIBRARY_PATHS}
-                NO_DEFAULT_PATH
-                NO_CMAKE_ENVIRONMENT_PATH
-                NO_CMAKE_PATH
-                NO_SYSTEM_ENVIRONMENT_PATH
-                NO_CMAKE_SYSTEM_PATH
-                DOC "The Iex library" )
-ENDIF()
-
-IF( NOT DEFINED ALEMBIC_ILMBASE_ILMTHREAD_LIB )
-  FIND_LIBRARY( ALEMBIC_ILMBASE_ILMTHREAD_LIB IlmThread
-                 PATHS
-                 ${LIBRARY_PATHS}
-                 NO_DEFAULT_PATH
-                 NO_CMAKE_ENVIRONMENT_PATH
-                 NO_CMAKE_PATH
-                 NO_SYSTEM_ENVIRONMENT_PATH
-                 NO_CMAKE_SYSTEM_PATH
-                 DOC "The IlmThread library" )
-ENDIF()
-
-IF( NOT DEFINED ALEMBIC_ILMBASE_IMATH_LIB )
-  FIND_LIBRARY( ALEMBIC_ILMBASE_IMATH_LIB Imath
-                PATHS
-                ${LIBRARY_PATHS}
-                NO_DEFAULT_PATH
-                NO_CMAKE_ENVIRONMENT_PATH
-                NO_CMAKE_PATH
-                NO_SYSTEM_ENVIRONMENT_PATH
-                NO_CMAKE_SYSTEM_PATH
-                DOC "The Imath library" )
-ENDIF()
-
-
-IF ( ${ALEMBIC_ILMBASE_HALF_LIB} STREQUAL "ALEMBIC_ILMBASE_HALF_LIB-NOTFOUND" )
-  MESSAGE( FATAL_ERROR "ilmbase libraries (Half, Iex, IlmThread, Imath) not found, required" )
-ENDIF()
-
-IF ( ${ALEMBIC_ILMBASE_IEX_LIB} STREQUAL "ALEMBIC_ILMBASE_IEX_LIB-NOTFOUND" )
-  MESSAGE( FATAL_ERROR "ilmbase libraries (Half, Iex, IlmThread, Imath) not found, required" )
-ENDIF()
-
-IF ( ${ALEMBIC_ILMBASE_ILMTHREAD_LIB} STREQUAL "ALEMBIC_ILMBASE_ILMTHREAD_LIB-NOTFOUND" )
-  MESSAGE( FATAL_ERROR "ilmbase libraries (Half, Iex, IlmThread, Imath) not found, required" )
-ENDIF()
-
-IF ( ${ALEMBIC_ILMBASE_IMATH_LIB} STREQUAL "ALEMBIC_ILMBASE_IMATH_LIB-NOTFOUND" )
-  MESSAGE( FATAL_ERROR "ilmbase libraries (Half, Iex, IlmThread, Imath) not found, required" )
+IF ( ${ALEMBIC_ILMBASE_JOINED_LIB} STREQUAL "ALEMBIC_ILMBASE_JOINED_LIB-NOTFOUND" )
+  MESSAGE( FATAL_ERROR "ilmbase libraries (joined) not found, required" )
 ENDIF()
 
 IF ( ${ALEMBIC_ILMBASE_INCLUDE_DIRECTORY} STREQUAL "ALEMBIC_ILMBASE_INCLUDE_DIRECTORY-NOTFOUND" )
@@ -176,16 +119,12 @@ ENDIF()
 
 
 MESSAGE( STATUS "ILMBASE INCLUDE PATH: ${ALEMBIC_ILMBASE_INCLUDE_DIRECTORY}" )
-MESSAGE( STATUS "HALF LIB: ${ALEMBIC_ILMBASE_HALF_LIB}" )
-MESSAGE( STATUS "IEX LIB: ${ALEMBIC_ILMBASE_IEX_LIB}" )
-MESSAGE( STATUS "ILMTHREAD LIB: ${ALEMBIC_ILMBASE_ILMTHREAD_LIB}" )
-MESSAGE( STATUS "IMATH LIB: ${ALEMBIC_ILMBASE_IMATH_LIB}" )
+MESSAGE( STATUS "JOINED LIB: ${ALEMBIC_ILMBASE_JOINED_LIB}" )
 
 SET( ILMBASE_FOUND TRUE )
-SET( ALEMBIC_ILMBASE_LIBS
-       ${ALEMBIC_ILMBASE_IMATH_LIB}
-       ${ALEMBIC_ILMBASE_ILMTHREAD_LIB}
-       ${ALEMBIC_ILMBASE_IEX_LIB}
-       ${ALEMBIC_ILMBASE_HALF_LIB} )
+
+MESSAGE( "FINALLY !!!!!!!!!!!!!!!!!! ${ALEMBIC_ILMBASE_JOINED_LIB}" )
+
+SET( ALEMBIC_ILMBASE_LIBS ${ALEMBIC_ILMBASE_JOINED_LIB} )
 
 

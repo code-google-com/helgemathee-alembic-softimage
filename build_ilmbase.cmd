@@ -7,54 +7,50 @@ goto :eof
 :AlembicDefined
 
 python "%ALEMBIC_ROOT%\prefetch_thirdparty_libs.py"
+python "%ALEMBIC_ROOT%\convert_ilmbase_vcprojs.py"
 
 if /i "%1" == "db:" (
 	set DB=_db
 	set config=Debug
-	set configFolder=Debug
+	set cmake_flags=-D CMAKE_CXX_FLAGS_DEBUG="/D_DEBUG /MTd /Zi  /Ob0 /Od /RTC1" -D BUILD_SHARED_LIBS=OFF
 	shift
 ) ELSE (
 	set DB=
-	set config=Release
-	set configFolder=RelWithDebInfo
+	set config=RelWithDebInfo
+	set cmake_flags=-D CMAKE_CXX_FLAGS_RELWITHDEBINFO="/MT /Zi /O2 /Ob1 /D NDEBUG" -D BUILD_SHARED_LIBS=OFF
 )
 
 if "%PROCESSOR_ARCHITECTURE%" == "AMD64" (
 	set SYS=i64
 	set arch=x64
+	set Generator="Visual Studio 9 2008 Win64"
 ) ELSE (
 	set SYS=x86
 	set arch=Win32
+	set Generator="Visual Studio 9 2008"
 )
 
-set srcRoot=%ALEMBIC_ROOT%\thirdparty\ilmbase-1.0.2
-set srcDir=%srcRoot%\vc\vc9\IlmBase
-set outDir=%ALEMBIC_OUT%\%SYS%\ilmbase
-set outLib=%outDir%\lib%DB%
-set IncDir=%outDir%\include
+set srcRoot=%ALEMBIC_ROOT%\thirdparty\ilmbase-1.0.2\joined
+set outDir=%ALEMBIC_OUT%\%SYS%\ilmbase\lib%DB%
+set incDir=%ALEMBIC_OUT%\%SYS%\ilmbase\include
+if NOT exist "%outDir%" md %outDir%
+if NOT exist "%incDir%" md %incDir%
 
-if not EXIST "%ALEMBIC_ROOT%\thirdparty\ilmbase-1.0.2\vc\vc9" (
-	xcopy %ALEMBIC_ROOT%\thirdparty\ilmbase-1.0.2\vc\vc8 %ALEMBIC_ROOT%\thirdparty\ilmbase-1.0.2\vc\vc9 /S /I
-	vcbuild /nologo %ALEMBIC_ROOT%\thirdparty\ilmbase-1.0.2\vc\vc9\IlmBase\Half\Half.vcproj /upgrade
-	vcbuild /nologo %ALEMBIC_ROOT%\thirdparty\ilmbase-1.0.2\vc\vc9\IlmBase\Iex\Iex.vcproj /upgrade
-	vcbuild /nologo %ALEMBIC_ROOT%\thirdparty\ilmbase-1.0.2\vc\vc9\IlmBase\IlmThread\IlmThread.vcproj /upgrade
-	vcbuild /nologo %ALEMBIC_ROOT%\thirdparty\ilmbase-1.0.2\vc\vc9\IlmBase\Imath\Imath.vcproj /upgrade
-)
-
-python "%ALEMBIC_ROOT%\convert_ilmbase_vcprojs.py"
-
-if NOT exist "%outLib%"		md %outLib%
-if NOT exist "%IncDir%" md %IncDir%
+copy %srcRoot%\*.h %incDir% /y
 
 @echo on
-vcbuild /nologo %1 %2 %3 %4 %5 %6 %srcDir%\Half\Half.vcproj "%config%|%arch%"
-vcbuild /nologo %1 %2 %3 %4 %5 %6 %srcDir%\Iex\Iex.vcproj "%config%|%arch%"
-vcbuild /nologo %1 %2 %3 %4 %5 %6 %srcDir%\IlmThread\IlmThread.vcproj "%config%|%arch%"
-vcbuild /nologo %1 %2 %3 %4 %5 %6 %srcDir%\Imath\Imath.vcproj "%config%|%arch%"
+pushd %outDir%
+cmake -G %Generator% %cmake_flags% %srcRoot%
 
-@echo off
-copy %srcDir%\%arch%\%config%\*.lib %outLib%
-copy %srcRoot%\Half\half*.h 	%IncDir%
-copy %srcRoot%\Iex\*.h 		%IncDir%
-copy %srcRoot%\IMath\*.h 	%IncDir%
-copy %srcRoot%\IlmThread\*.h 	%IncDir%
+vcbuild /nologo %1 %2 %3 %4 %5 %6 toFloat.vcproj "%config%|%arch%"
+@%outDir%\%config%\toFloat.exe > %srcRoot%\toFloat.h
+@copy %srcRoot%\toFloat.h %incDir% /y
+@echo Generated toFloat.h include file.
+
+vcbuild /nologo %1 %2 %3 %4 %5 %6 eLut.vcproj "%config%|%arch%"
+@%outDir%\%config%\eLut.exe > %srcRoot%\eLut.h
+@copy %srcRoot%\eLut.h %incDir% /y
+@echo Generated eLut.h include file.
+
+vcbuild /nologo %1 %2 %3 %4 %5 %6 joined.vcproj "%config%|%arch%"
+@popd

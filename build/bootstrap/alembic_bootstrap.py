@@ -161,22 +161,8 @@ def validate_path( p, wantdir=False ):
 
 ##-*****************************************************************************
 def ask_to_exit( message ):
-    print
-    print "Warning!  Something went wrong:\n%s" % message
-    print
-
-    while True:
-        answer = raw_input( "Would you like to abort the bootstrap and try fixing it manually? Y/n: " )
-        if answer == 'Y' or answer == 'y' or answer == '':
-            print "OK, exiting the bootstrapping process. Sorry for the difficulty!"
-            sys.exit( -1 )
-        elif answer == 'n' or answer == 'N':
-            print "OK, pressing on regardless. FYI, your build may not succeed."
-            break
-        else:
-            print "Please enter 'y' or 'n'."
-
-    return
+	print "OK, exiting the bootstrapping process. Sorry for the difficulty!"
+	sys.exit( -1 )
 
 ##-*****************************************************************************
 def find_path( magic_file, default=False ):
@@ -345,18 +331,18 @@ def configureCMakeIlmbase( cmake_args, useRoot = False ):
 
     srcdir = cmake_args[0]
 
-    libNames = ["Half", "Iex", "IlmThread", "Imath"]
+    libNames = ["joined"]
 
     ilmbaseLibs = ""
     libdir, imathlib = Path( cmake_args[2] ).split()
 
     imathlib = str( imathlib )
-
+    
     #print "imath lib: %s, libdir: %s" % ( imathlib, libdir )
     #sys.exit( 0 )
 
     libext = getLibExtension( imathlib )
-    libPreludeIndex = imathlib.find( "Imath" )
+    libPreludeIndex = imathlib.find( "joined" )
     libPrelude = imathlib[:libPreludeIndex]
 
     for lib in libNames:
@@ -636,7 +622,7 @@ def find_ilmbase_imath_lib( cmakecache = None ):
         mf = "libImath.a"
         print '(eg, "/usr/local/ilmbase-1.0.1/lib/libImath.a")'
     print
-
+    
     cmakevar = "ALEMBIC_ILMBASE_IMATH_LIB"
 
     cmakedefault, defaults = get_defaults( mf, cmakevar, cmakecache )
@@ -816,7 +802,7 @@ def configure_ilmbase( options, srcdir, cmakecache ):
         ilmbase_imath_library = options.ilmbase_imath_library
     else:
         ilmbase_imath_library = str( find_ilmbase_imath_lib( cmakecache ) )
-
+        
     cmake_args = []
     cmake_args.append( srcdir )
     cmake_args.append( ilmbase_include_dir )

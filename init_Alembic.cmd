@@ -12,8 +12,10 @@ REM let's assume we don't need to debug IlmBase, boost, or zlib and just use the
 REM libs even when building debug. This way we don't have to nuke the projects to switch.
 REM ******************************************************************************************
 :	set DB=_db
+	set config=Debug
 	shift
 ) ELSE (
+	set config=RelWithDebInfo
 	set DB=
 )
 
@@ -33,6 +35,7 @@ set rootOut=%ALEMBIC_OUT%
 set platOut=%rootOut%\%SYS%
 set BOOST_ROOT=%ALEMBIC_ROOT%\thirdparty\boost-1_42_0
 set ILMBASE_ROOT=%platOut%\IlmBase
+set ILMBASE_ROOT_LIB=%platOut%\IlmBase\lib%db%\%config%
 set OPENEXR_ROOT=%ALEMBIC_ROOT%\thirdparty\openexr-1.6.1
 set HDF5_ROOT=%ALEMBIC_ROOT%\thirdparty\hdf5-1.8.7
 set ZLIB_ROOT=%ALEMBIC_ROOT%\thirdparty\zlib-1.2.5
@@ -53,7 +56,7 @@ set cppflags=%ccflags% /EHsc /GR
 set BASE_ARGS=--disable-prman --disable-maya --generator=%Generator%
 rem set BASE_ARGS=--disable-prman --with-maya=%MAYA_ROOT% --generator=%Generator%
 set HDF_ARGS=--hdf5_include_dir=%platOut%\hdf5\include --hdf5_hdf5_library=%platOut%\hdf5\bin\RelWithDebInfo\hdf5_hl%db%.lib
-set ILM_ARGS=--ilmbase_include_dir=%ILMBASE_ROOT%\include --ilmbase_imath_library=%ILMBASE_ROOT%\lib%db%\Imath.lib
+set ILM_ARGS=--ilmbase_include_dir=%ILMBASE_ROOT%\include --ilmbase_imath_library=%ILMBASE_ROOT%\lib%db%\%config%\joined.lib
 set BOOST_ARGS=--boost_include_dir=%platOut%\boost\include\boost-1_42 --boost_program_options_library=%platOut%\boost\lib%db%\libboost_program_options-vc90-mt%db%-1_42.lib
 set ZLIB_ARGS=--zlib_include_dir=%ZLIB_ROOT% --zlib_library=%platOut%\zlib\RelWithDebInfo\zlib%db%.lib
 
