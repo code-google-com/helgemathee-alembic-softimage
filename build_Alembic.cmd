@@ -27,13 +27,13 @@ set buildArg="%config%|%arch%"
 set outDir=%ALEMBIC_OUT%\%SYS%
 
 @echo on
-rem vcbuild /nologo %1 %2 %3 %4 %5 %6 %outDir%\lib\Alembic\Util\AlembicUtil.vcproj %buildArg%
-rem rem vcbuild /nologo %1 %2 %3 %4 %5 %6 %outDir%\lib\Alembic\Abc\AlembicAbc.vcproj %buildArg%
-rem vcbuild /nologo %1 %2 %3 %4 %5 %6 %outDir%\lib\Alembic\AbcCoreAbstract\AlembicAbcCoreAbstract.vcproj %buildArg%
-rem vcbuild /nologo %1 %2 %3 %4 %5 %6 %outDir%\lib\Alembic\AbcCoreHDF5\AlembicAbcCoreHDF5.vcproj %buildArg%
-rem vcbuild /nologo %1 %2 %3 %4 %5 %6 %outDir%\lib\Alembic\MD5Hash\AlembicMD5Hash.vcproj %buildArg%
-rem vcbuild /nologo %1 %2 %3 %4 %5 %6 %outDir%\lib\Alembic\AbcGeom\AlembicAbcGeom.vcproj %buildArg%
-vcbuild /nologo %1 %2 %3 %4 %5 %6 %outDir%\Alembic.sln %buildArg%
+vcbuild /nologo %1 %2 %3 %4 %5 %6 %outDir%\lib\Alembic\Util\AlembicUtil.vcproj %buildArg%
+vcbuild /nologo %1 %2 %3 %4 %5 %6 %outDir%\lib\Alembic\Abc\AlembicAbc.vcproj %buildArg%
+vcbuild /nologo %1 %2 %3 %4 %5 %6 %outDir%\lib\Alembic\AbcCoreAbstract\AlembicAbcCoreAbstract.vcproj %buildArg%
+vcbuild /nologo %1 %2 %3 %4 %5 %6 %outDir%\lib\Alembic\AbcCoreHDF5\AlembicAbcCoreHDF5.vcproj %buildArg%
+vcbuild /nologo %1 %2 %3 %4 %5 %6 %outDir%\lib\Alembic\MD5Hash\AlembicMD5Hash.vcproj %buildArg%
+vcbuild /nologo %1 %2 %3 %4 %5 %6 %outDir%\lib\Alembic\AbcGeom\AlembicAbcGeom.vcproj %buildArg%
+rem vcbuild /nologo %1 %2 %3 %4 %5 %6 %outDir%\Alembic.sln %buildArg%
 
 @echo off
 if not exist %outDir%\alembic\%config% md %outDir%\alembic\%config%
