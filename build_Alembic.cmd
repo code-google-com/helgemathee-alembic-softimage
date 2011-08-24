@@ -7,10 +7,12 @@ goto :eof
 :AlembicDefined
 
 if /i "%1" == "db:" (
+	set targetLibDir=%ALEMBIC_ROOT%\lib64\Debug
 	set DB=_db
 	set config=Debug
 	shift
 ) ELSE (
+	set targetLibDir=%ALEMBIC_ROOT%\lib64\Release
 	set DB=
 	set config=RelWithDebInfo
 )
@@ -50,3 +52,6 @@ copy %outDir%\lib\Alembic\AbcCoreHDF5\%config%\*.pdb %outDir%\alembic\%config% /
 copy %outDir%\lib\Alembic\MD5Hash\%config%\*.pdb %outDir%\alembic\%config% /y
 copy %outDir%\lib\Alembic\AbcGeom\%config%\*.pdb %outDir%\alembic\%config% /y
 
+if not exist %targetLibDir% md %targetLibDir%
+copy %outDir%\alembic\%config%\*.lib %targetLibDir% /y
+copy %outDir%\alembic\%config%\*.pdb %targetLibDir% /y
