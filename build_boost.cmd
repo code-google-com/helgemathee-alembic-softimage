@@ -46,7 +46,7 @@ set BOOST_INC=%targetOut%\include
 set BOOST_LIB=%targetOut%\lib%db%
 set BOOST_BUILD=%targetOut%\build
 set BOOST_OUT=--includedir=%BOOST_INC% --libdir=%BOOST_LIB% --build-dir=%BOOST_BUILD%
-set BOOST_ARGS=--layout=versioned link=static runtime-link=static runtime-debugging=on threading=multi %addrModel% %altCompiler%
+set BOOST_ARGS=--layout=versioned link=static runtime-link=shared runtime-debugging=on threading=multi %addrModel% %altCompiler%
 set BUILD_THESE_ONLY= --with-program_options --with-iostreams --with-date_time --with-thread
 
 @echo on
