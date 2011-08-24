@@ -11,6 +11,7 @@ python "%ALEMBIC_ROOT%\prefetch_thirdparty_libs.py"
 if /i "%1" == "db:" (
 	set DB=_db
 	shift
+	set VARIANT=variant=debug
 ) ELSE (
 	set VARIANT=variant=release
 	set DB=
@@ -43,7 +44,7 @@ set BOOST_INC=%targetOut%\include
 set BOOST_LIB=%targetOut%\lib%db%
 set BOOST_BUILD=%targetOut%\build
 set BOOST_OUT=--includedir=%BOOST_INC% --libdir=%BOOST_LIB% --build-dir=%BOOST_BUILD%
-set BOOST_ARGS=--layout=versioned link=static threading=multi %addrModel% %altCompiler%
+set BOOST_ARGS=--layout=versioned link=static runtime-link=static threading=multi %addrModel% %altCompiler%
 set BUILD_THESE_ONLY= --with-program_options --with-iostreams --with-date_time --with-thread
 
 @echo on
