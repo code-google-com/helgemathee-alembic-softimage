@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -37,7 +37,6 @@
 #include <Alembic/AbcCoreAbstract/All.h>
 #include <Alembic/AbcCoreHDF5/All.h>
 #include <Alembic/Util/All.h>
-#include <Alembic/MD5Hash/All.h>
 
 #include <Alembic/AbcCoreHDF5/Tests/Assert.h>
 
@@ -50,6 +49,8 @@
 namespace A5 = Alembic::AbcCoreHDF5;
 
 namespace ABC = Alembic::AbcCoreAbstract::v1;
+
+using namespace Alembic::Util;
 
 //-*****************************************************************************
 void testDuplicateArray()
@@ -67,15 +68,15 @@ void testDuplicateArray()
 
         ABC::ArrayPropertyWriterPtr awp =
             parent->createArrayProperty("a",  ABC::MetaData(),
-                ABC::DataType(Alembic::Util::kInt16POD, 1), 0);
+                                        ABC::DataType(Alembic::Util::kInt16POD, 1), 0);
 
         ABC::ArrayPropertyWriterPtr bwp =
             parent->createArrayProperty("b", ABC::MetaData(),
-                ABC::DataType(Alembic::Util::kInt16POD, 1), 0);
+                                        ABC::DataType(Alembic::Util::kInt16POD, 1), 0);
 
         ABC::ArrayPropertyWriterPtr cwp =
             parent->createArrayProperty("c", ABC::MetaData(),
-                ABC::DataType(Alembic::Util::kInt8POD, 1), 0);
+                                        ABC::DataType(Alembic::Util::kInt8POD, 1), 0);
 
         Alembic::Util::Dimensions dims(numVals);
         ABC::DataType i16d(Alembic::Util::kInt16POD, 1);
@@ -153,6 +154,17 @@ void testDuplicateArray()
 
             if (ap->getName() == "a")
             {
+                Dimensions dims0;
+                Dimensions dims1;
+                Dimensions dims2;
+                ap->getDimensions(0, dims0);
+                ap->getDimensions(1, dims1);
+                ap->getDimensions(2, dims2);
+
+                TESTING_ASSERT(dims0.numPoints() == numVals);
+                TESTING_ASSERT(dims1.numPoints() == numVals);
+                TESTING_ASSERT(dims2.numPoints() == numVals);
+
                 ABC::ArraySamplePtr samp0;
                 ABC::ArraySamplePtr samp1;
                 ABC::ArraySamplePtr samp2;
@@ -204,6 +216,17 @@ void testDuplicateArray()
                 TESTING_ASSERT(samp1->getDimensions().numPoints() == numVals);
                 TESTING_ASSERT(samp2->getDimensions().numPoints() == numVals);
 
+                Dimensions dims0;
+                Dimensions dims1;
+                Dimensions dims2;
+                ap->getDimensions(0, dims0);
+                ap->getDimensions(1, dims1);
+                ap->getDimensions(2, dims2);
+
+                TESTING_ASSERT(dims0.numPoints() == numVals);
+                TESTING_ASSERT(dims1.numPoints() == numVals);
+                TESTING_ASSERT(dims2.numPoints() == numVals);
+
                 int16_t * data = (int16_t *)(samp0->getData());
                 TESTING_ASSERT(data[0] == 8);
                 TESTING_ASSERT(data[1] == 16);
@@ -243,6 +266,17 @@ void testDuplicateArray()
                 TESTING_ASSERT(samp0->getDimensions().numPoints() == numVals*2);
                 TESTING_ASSERT(samp1->getDimensions().numPoints() == numVals*2);
                 TESTING_ASSERT(samp2->getDimensions().numPoints() == numVals*2);
+
+                Dimensions dims0;
+                Dimensions dims1;
+                Dimensions dims2;
+                ap->getDimensions(0, dims0);
+                ap->getDimensions(1, dims1);
+                ap->getDimensions(2, dims2);
+
+                TESTING_ASSERT(dims0.numPoints() == numVals*2);
+                TESTING_ASSERT(dims1.numPoints() == numVals*2);
+                TESTING_ASSERT(dims2.numPoints() == numVals*2);
 
                 int8_t * data = (int8_t *)(samp0->getData());
                 TESTING_ASSERT(data[0] == 8);
@@ -335,7 +369,7 @@ void testReadWriteArrays()
             ABC::DataType dtype(Alembic::Util::kUint8POD, 1);
             ABC::ArrayPropertyWriterPtr uint8WrtPtr =
                 props->createArrayProperty("uint8_newDims",
-                    ABC::MetaData(), dtype, 0);
+                                           ABC::MetaData(), dtype, 0);
 
             std::vector< Alembic::Util::uint8_t > vals(4);
             vals[0] = 200;
@@ -371,7 +405,7 @@ void testReadWriteArrays()
             ABC::DataType dtype(Alembic::Util::kUint16POD, 1);
             ABC::ArrayPropertyWriterPtr uint16WrtPtr =
                 props->createArrayProperty("uint16", ABC::MetaData(),
-                    ABC::DataType(Alembic::Util::kUint16POD, 1), 0 );
+                                           ABC::DataType(Alembic::Util::kUint16POD, 1), 0 );
 
             std::vector < Alembic::Util::uint16_t > vals(3);
             vals[0] = 60000;
@@ -388,7 +422,7 @@ void testReadWriteArrays()
             ABC::DataType dtype(Alembic::Util::kInt16POD, 1);
             ABC::ArrayPropertyWriterPtr int16WrtPtr =
                 props->createArrayProperty("int16", ABC::MetaData(),
-                    dtype, 0);
+                                           dtype, 0);
             std::vector < int16_t > vals(2);
             vals[0] = -20000;
             vals[1] = 77;
@@ -401,7 +435,7 @@ void testReadWriteArrays()
             ABC::DataType dtype(Alembic::Util::kUint32POD, 1);
             ABC::ArrayPropertyWriterPtr uint32WrtPtr =
                 props->createArrayProperty("uint32",  ABC::MetaData(), dtype,
-                    0);
+                                           0);
 
             std::vector < Alembic::Util::uint32_t > vals(1);
             vals[0] = 1000000;
@@ -457,7 +491,7 @@ void testReadWriteArrays()
             ABC::DataType dtype(Alembic::Util::kFloat16POD, 1);
             ABC::ArrayPropertyWriterPtr halfWrtPtr =
                 props->createArrayProperty("float16",
-                    ABC::MetaData(), dtype, 0);
+                                           ABC::MetaData(), dtype, 0);
 
             std::vector < Alembic::Util::float16_t > vals(2);
             vals[0] = 16.0;
@@ -472,7 +506,7 @@ void testReadWriteArrays()
             ABC::DataType dtype(Alembic::Util::kFloat32POD, 2);
             ABC::ArrayPropertyWriterPtr floatWrtPtr =
                 props->createArrayProperty("float32", ABC::MetaData(), dtype,
-                    0);
+                                           0);
             std::vector < Alembic::Util::float32_t > vals(4);
             vals[0] = 128.0;
             vals[1] = -13.25;
@@ -487,7 +521,7 @@ void testReadWriteArrays()
             ABC::DataType dtype(Alembic::Util::kFloat32POD, 1);
             ABC::ArrayPropertyWriterPtr floatWrtPtr =
                 props->createArrayProperty("float32_ext1",
-                    ABC::MetaData(), dtype, 0);
+                                           ABC::MetaData(), dtype, 0);
             std::vector < Alembic::Util::float32_t > vals(4);
             vals[0] = 128.0;
             vals[1] = -13.25;
@@ -502,7 +536,7 @@ void testReadWriteArrays()
             ABC::DataType dtype(Alembic::Util::kFloat64POD, 1);
             ABC::ArrayPropertyWriterPtr doubleWrtPtr =
                 props->createArrayProperty("float64",  ABC::MetaData(),
-                    dtype, 0);
+                                           dtype, 0);
 
             std::vector < Alembic::Util::float64_t > vals(30);
             for (size_t i = 0; i < vals.size(); ++i)
@@ -518,7 +552,7 @@ void testReadWriteArrays()
             ABC::DataType dtype(Alembic::Util::kFloat64POD, 3);
             ABC::ArrayPropertyWriterPtr doubleWrtPtr =
                 props->createArrayProperty("float64_ext3",
-                    ABC::MetaData(), dtype, 0);
+                                           ABC::MetaData(), dtype, 0);
 
             std::vector < Alembic::Util::float64_t > vals(30);
             for (size_t i = 0; i < vals.size(); ++i)
@@ -534,7 +568,7 @@ void testReadWriteArrays()
             ABC::DataType dtype(Alembic::Util::kStringPOD, 1);
             ABC::ArrayPropertyWriterPtr strWrtPtr =
                 props->createArrayProperty("str",
-                    ABC::MetaData(), dtype, 0);
+                                           ABC::MetaData(), dtype, 0);
 
             std::vector < Alembic::Util::string > vals(4);
             vals[0] = "Now it's time";
@@ -558,7 +592,7 @@ void testReadWriteArrays()
             vals[3] = L"\uf8e4 \uf8e2 \uf8d3";
             Alembic::Util::Dimensions dims(vals.size());
             wstrWrtPtr->setSample(
-                                 ABC::ArraySample(&(vals.front()), dtype, dims));
+                ABC::ArraySample(&(vals.front()), dtype, dims));
         }
 
     }
@@ -598,6 +632,12 @@ void testReadWriteArrays()
                     ap->getSample(0, val);
                     TESTING_ASSERT(val->getDimensions().numPoints() == 3);
                     TESTING_ASSERT(val->getDimensions().rank() == 1);
+
+                    Dimensions dims0;
+                    ap->getDimensions(0, dims0);
+                    TESTING_ASSERT(dims0.numPoints() == 3);
+                    TESTING_ASSERT(dims0.rank() == 1);
+
                     Alembic::Util::bool_t * data =
                         (Alembic::Util::bool_t *)(val->getData());
                     TESTING_ASSERT(data[0] == false);
@@ -615,7 +655,7 @@ void testReadWriteArrays()
 
                 case Alembic::Util::kUint8POD:
                 {
-                    TESTING_ASSERT(ap->getName() == "uint8" || 
+                    TESTING_ASSERT(ap->getName() == "uint8" ||
                         ap->getName() == "uint8_newDims");
                     TESTING_ASSERT(!ap->isScalarLike());
                     ABC::ArraySamplePtr val;
@@ -635,23 +675,31 @@ void testReadWriteArrays()
                     TESTING_ASSERT(key.digest.str() ==
                         "2972c92c7f534e37ee116ae01c707741");
 
-                    /*if (ap->getName() == "uint8")
+                    if (ap->getName() == "uint8")
                     {
-                        TESTING_ASSERT(val->getDimensions().rank() == 1);
-                        TESTING_ASSERT(val->getDimensions()[0] == 4);
+                        Dimensions dims0;
+                        ap->getDimensions(0, dims0);
+                        TESTING_ASSERT(dims0.rank() == 1);
+                        TESTING_ASSERT(dims0[0] == 4);
                     }
                     else if (ap->getName() == "uint8_newDims")
                     {
-                        TESTING_ASSERT(val->getDimensions().rank() == 2);
-                        TESTING_ASSERT(val->getDimensions()[0] == 2);
-                        TESTING_ASSERT(val->getDimensions()[1] == 2);
-                    }*/
+                        Dimensions dims0;
+                        ap->getDimensions(0, dims0);
+                        TESTING_ASSERT(dims0.rank() == 2);
+                        TESTING_ASSERT(dims0[0] == 2);
+                        TESTING_ASSERT(dims0[1] == 2);
+                    }
                 }
                 break;
 
                 case Alembic::Util::kInt8POD:
                 {
                     TESTING_ASSERT(ap->getName() == "int8");
+                    Dimensions dims0;
+                    ap->getDimensions(0, dims0);
+                    TESTING_ASSERT(dims0.rank() == 1);
+                    TESTING_ASSERT(dims0.numPoints() == 2);
                     TESTING_ASSERT(!ap->isScalarLike());
                     ABC::ArraySamplePtr val;
                     ap->getSample(0, val);
@@ -672,6 +720,10 @@ void testReadWriteArrays()
                     ap->getSample(0, val);
                     TESTING_ASSERT(val->getDimensions().numPoints() == 3);
                     TESTING_ASSERT(val->getDimensions().rank() == 1);
+                    Dimensions dims0;
+                    ap->getDimensions(0, dims0);
+                    TESTING_ASSERT(dims0.rank() == 1);
+                    TESTING_ASSERT(dims0.numPoints() == 3);
                     Alembic::Util::uint16_t * data =
                         (Alembic::Util::uint16_t *)(val->getData());
                     TESTING_ASSERT(data[0] == 60000);
@@ -684,6 +736,10 @@ void testReadWriteArrays()
                 {
                     TESTING_ASSERT(ap->getName() == "int16");
                     TESTING_ASSERT(!ap->isScalarLike());
+                    Dimensions dims0;
+                    ap->getDimensions(0, dims0);
+                    TESTING_ASSERT(dims0.rank() == 1);
+                    TESTING_ASSERT(dims0.numPoints() == 2);
                     ABC::ArraySamplePtr val;
                     ap->getSample(0, val);
                     TESTING_ASSERT(val->getDimensions().numPoints() == 2);
@@ -703,6 +759,10 @@ void testReadWriteArrays()
                     ap->getSample(0, val);
                     TESTING_ASSERT(val->getDimensions().numPoints() == 1);
                     TESTING_ASSERT(val->getDimensions().rank() == 1);
+                    Dimensions dims0;
+                    ap->getDimensions(0, dims0);
+                    TESTING_ASSERT(dims0.rank() == 1);
+                    TESTING_ASSERT(dims0.numPoints() == 1);
                     Alembic::Util::uint32_t * data =
                         (Alembic::Util::uint32_t *)(val->getData());
                     TESTING_ASSERT(data[0] == 1000000);
@@ -717,6 +777,10 @@ void testReadWriteArrays()
                     ap->getSample(0, val);
                     TESTING_ASSERT(val->getDimensions().numPoints() == 4);
                     TESTING_ASSERT(val->getDimensions().rank() == 1);
+                    Dimensions dims0;
+                    ap->getDimensions(0, dims0);
+                    TESTING_ASSERT(dims0.rank() == 1);
+                    TESTING_ASSERT(dims0.numPoints() == 4);
                     Alembic::Util::int32_t * data =
                         (Alembic::Util::int32_t *)(val->getData());
                     TESTING_ASSERT(data[0] == -1000000);
@@ -734,6 +798,10 @@ void testReadWriteArrays()
                     ap->getSample(0, val);
                     TESTING_ASSERT(val->getDimensions().numPoints() == 3);
                     TESTING_ASSERT(val->getDimensions().rank() == 1);
+                    Dimensions dims0;
+                    ap->getDimensions(0, dims0);
+                    TESTING_ASSERT(dims0.rank() == 1);
+                    TESTING_ASSERT(dims0.numPoints() == 3);
                     Alembic::Util::uint64_t * data =
                         (Alembic::Util::uint64_t *)(val->getData());
                     TESTING_ASSERT(data[0] == 5000000000LL);
@@ -750,6 +818,10 @@ void testReadWriteArrays()
                     ap->getSample(0, val);
                     TESTING_ASSERT(val->getDimensions().numPoints() == 2);
                     TESTING_ASSERT(val->getDimensions().rank() == 1);
+                    Dimensions dims0;
+                    ap->getDimensions(0, dims0);
+                    TESTING_ASSERT(dims0.rank() == 1);
+                    TESTING_ASSERT(dims0.numPoints() == 2);
                     Alembic::Util::int64_t * data =
                         (Alembic::Util::int64_t *)(val->getData());
                     TESTING_ASSERT(data[0] == -5000000000LL);
@@ -765,6 +837,10 @@ void testReadWriteArrays()
                     ap->getSample(0, val);
                     TESTING_ASSERT(val->getDimensions().numPoints() == 2);
                     TESTING_ASSERT(val->getDimensions().rank() == 1);
+                    Dimensions dims0;
+                    ap->getDimensions(0, dims0);
+                    TESTING_ASSERT(dims0.rank() == 1);
+                    TESTING_ASSERT(dims0.numPoints() == 2);
                     Alembic::Util::float16_t * data =
                         (Alembic::Util::float16_t *)(val->getData());
                     TESTING_ASSERT(data[0] == 16.0);
@@ -783,12 +859,20 @@ void testReadWriteArrays()
                     if (ap->getName() == "float32_ext1")
                     {
                         TESTING_ASSERT(val->getDimensions().numPoints() == 4);
+                        Dimensions dims0;
+                        ap->getDimensions(0, dims0);
+                        TESTING_ASSERT(dims0.rank() == 1);
+                        TESTING_ASSERT(dims0.numPoints() == 4);
                     }
 
                     if (ap->getName() == "float32")
                     {
                         TESTING_ASSERT( ap->getDataType().getExtent() == 2);
                         TESTING_ASSERT(val->getDimensions().numPoints() == 2);
+                        Dimensions dims0;
+                        ap->getDimensions(0, dims0);
+                        TESTING_ASSERT(dims0.rank() == 1);
+                        TESTING_ASSERT(dims0.numPoints() == 2);
                     }
 
                     TESTING_ASSERT(val->getDimensions().rank() == 1);
@@ -803,7 +887,7 @@ void testReadWriteArrays()
 
                 case Alembic::Util::kFloat64POD:
                 {
-                    TESTING_ASSERT(ap->getName() == "float64" || 
+                    TESTING_ASSERT(ap->getName() == "float64" ||
                         ap->getName() == "float64_ext3");
                     TESTING_ASSERT(!ap->isScalarLike());
 
@@ -812,10 +896,20 @@ void testReadWriteArrays()
                     TESTING_ASSERT(val->getDimensions().rank() == 1);
 
                     if (ap->getName() == "float64")
+                    {
+                        Dimensions dims0;
+                        ap->getDimensions(0, dims0);
+                        TESTING_ASSERT(dims0.rank() == 1);
+                        TESTING_ASSERT(dims0.numPoints() == 30);
                         TESTING_ASSERT(val->getDimensions().numPoints() == 30);
+                    }
 
                     if (ap->getName() == "float64_ext3")
                     {
+                        Dimensions dims0;
+                        ap->getDimensions(0, dims0);
+                        TESTING_ASSERT(dims0.rank() == 1);
+                        TESTING_ASSERT(dims0.numPoints() == 10);
                         TESTING_ASSERT( ap->getDataType().getExtent() == 3);
                         TESTING_ASSERT(val->getDimensions().numPoints() == 10);
                     }
@@ -835,6 +929,10 @@ void testReadWriteArrays()
                     TESTING_ASSERT(!ap->isScalarLike());
                     TESTING_ASSERT(val->getDimensions().numPoints() == 4);
                     TESTING_ASSERT(val->getDimensions().rank() == 1);
+                    Dimensions dims0;
+                    ap->getDimensions(0, dims0);
+                    TESTING_ASSERT(dims0.rank() == 1);
+                    TESTING_ASSERT(dims0.numPoints() == 4);
                     Alembic::Util::string * data =
                         (Alembic::Util::string *)(val->getData());
                     TESTING_ASSERT(data[0] == "Now it's time");
@@ -852,6 +950,10 @@ void testReadWriteArrays()
                 TESTING_ASSERT(!ap->isScalarLike());
                 TESTING_ASSERT(val->getDimensions().numPoints() == 4);
                 TESTING_ASSERT(val->getDimensions().rank() == 1);
+                Dimensions dims0;
+                ap->getDimensions(0, dims0);
+                TESTING_ASSERT(dims0.rank() == 1);
+                TESTING_ASSERT(dims0.numPoints() == 4);
                 Alembic::Util::wstring * data =
                     (Alembic::Util::wstring *)(val->getData());
                 TESTING_ASSERT(data[0] == L"We do what we must ");
@@ -861,8 +963,8 @@ void testReadWriteArrays()
             }
             break;
 
-                default:
-                    TESTING_ASSERT(false);
+            default:
+                TESTING_ASSERT(false);
                 break;
             }
         }
@@ -882,7 +984,7 @@ void testEmptyArray()
 
         ABC::ArrayPropertyWriterPtr awp =
             parent->createArrayProperty("emptyInt32", ABC::MetaData(),
-                ABC::DataType(Alembic::Util::kInt32POD, 1), 0);
+                                        ABC::DataType(Alembic::Util::kInt32POD, 1), 0);
         TESTING_ASSERT(awp->getNumSamples() == 0);
     }
 
@@ -899,7 +1001,7 @@ void testEmptyArray()
         TESTING_ASSERT(bp->asScalarPtr() == NULL);
         TESTING_ASSERT(bp->getParent() == parent);
         ABC::ArrayPropertyReaderPtr ap = bp->asArrayPtr();
-                TESTING_ASSERT(ap->getNumSamples() == 0);
+        TESTING_ASSERT(ap->getNumSamples() == 0);
         TESTING_ASSERT(ap->getNumSamples() == 0);
         TESTING_ASSERT(ap->isConstant());
         ABC::ArraySamplePtr as;
@@ -916,56 +1018,56 @@ void testEmptyArray()
 
         // no extent should throw
         TESTING_ASSERT_THROW(parent->createArrayProperty("emptyInt32",
-            ABC::MetaData(), ABC::DataType(Alembic::Util::kInt32POD, 0), 0),
-            Alembic::Util::Exception);
+                                                         ABC::MetaData(), ABC::DataType(Alembic::Util::kInt32POD, 0), 0),
+                             Alembic::Util::Exception);
 
         // 2 parts of the enum that shouldn't be written out
         TESTING_ASSERT_THROW(parent->createArrayProperty("emptyInt32",
-            ABC::MetaData(), ABC::DataType(Alembic::Util::kUnknownPOD, 1), 0),
-            Alembic::Util::Exception);
+                                                         ABC::MetaData(), ABC::DataType(Alembic::Util::kUnknownPOD, 1), 0),
+                             Alembic::Util::Exception);
 
         TESTING_ASSERT_THROW(parent->createArrayProperty("emptyInt32",
-            ABC::MetaData(),
-            ABC::DataType(Alembic::Util::kNumPlainOldDataTypes, 1), 0),
-            Alembic::Util::Exception);
+                                                         ABC::MetaData(),
+                                                         ABC::DataType(Alembic::Util::kNumPlainOldDataTypes, 1), 0),
+                             Alembic::Util::Exception);
 
         // illegal time sampling index
         TESTING_ASSERT_THROW(parent->createArrayProperty("emptyInt32",
-            ABC::MetaData(),
-            ABC::DataType(Alembic::Util::kInt32POD, 1), 45),
-            Alembic::Util::Exception);
+                                                         ABC::MetaData(),
+                                                         ABC::DataType(Alembic::Util::kInt32POD, 1), 45),
+                             Alembic::Util::Exception);
 
         // lets do it again for the Scalars
 
         // no extent should throw
         TESTING_ASSERT_THROW(parent->createScalarProperty("emptyInt32",
-            ABC::MetaData(), ABC::DataType(Alembic::Util::kInt32POD, 0), 0),
-            Alembic::Util::Exception);
+                                                          ABC::MetaData(), ABC::DataType(Alembic::Util::kInt32POD, 0), 0),
+                             Alembic::Util::Exception);
 
         // 2 parts of the enum that shouldn't be written out
         TESTING_ASSERT_THROW(parent->createScalarProperty("emptyInt32",
-            ABC::MetaData(),
-            ABC::DataType(Alembic::Util::kUnknownPOD, 1), 0),
-            Alembic::Util::Exception);
+                                                          ABC::MetaData(),
+                                                          ABC::DataType(Alembic::Util::kUnknownPOD, 1), 0),
+                             Alembic::Util::Exception);
 
         TESTING_ASSERT_THROW(parent->createScalarProperty("emptyInt32",
-            ABC::MetaData(),
-            ABC::DataType(Alembic::Util::kNumPlainOldDataTypes, 1), 0),
-            Alembic::Util::Exception);
+                                                          ABC::MetaData(),
+                                                          ABC::DataType(Alembic::Util::kNumPlainOldDataTypes, 1), 0),
+                             Alembic::Util::Exception);
 
         // illegal time sampling index
         TESTING_ASSERT_THROW(parent->createScalarProperty("emptyInt32",
-            ABC::MetaData(),
-            ABC::DataType(Alembic::Util::kInt32POD, 1), 42),
-            Alembic::Util::Exception);
+                                                          ABC::MetaData(),
+                                                          ABC::DataType(Alembic::Util::kInt32POD, 1), 42),
+                             Alembic::Util::Exception);
 
         parent->createArrayProperty("veryEmptyInt32",
-            ABC::MetaData(), ABC::DataType(Alembic::Util::kInt32POD, 1), 0);
+                                    ABC::MetaData(), ABC::DataType(Alembic::Util::kInt32POD, 1), 0);
 
         // this should throw because the name isn't unique
         TESTING_ASSERT_THROW(parent->createScalarProperty("veryEmptyInt32",
-            ABC::MetaData(), ABC::DataType(Alembic::Util::kInt32POD, 1), 0),
-            Alembic::Util::Exception);
+                                                          ABC::MetaData(), ABC::DataType(Alembic::Util::kInt32POD, 1), 0),
+                             Alembic::Util::Exception);
 
         ABC::ArrayPropertyWriterPtr ap = parent->createArrayProperty(
             "emptyInt64", ABC::MetaData(),
@@ -1010,6 +1112,8 @@ void testEmptyArray()
                 TESTING_ASSERT(ap->getNumSamples() == 1);
                 ABC::ArraySamplePtr samp;
                 ap->getSample(0, samp);
+                Dimensions dims0;
+                TESTING_ASSERT(dims0.numPoints() == 0);
                 TESTING_ASSERT(samp->getDimensions().numPoints() == 0);
                 TESTING_ASSERT(!ap->isScalarLike());
                 TESTING_ASSERT(ap->getKey(0, key));
@@ -1017,7 +1121,7 @@ void testEmptyArray()
                 TESTING_ASSERT(key.origPOD == Alembic::Util::kInt64POD);
                 TESTING_ASSERT(key.readPOD == Alembic::Util::kInt64POD);
                 TESTING_ASSERT(key.digest.str() ==
-                    "00000000000000000000000000000000");
+                               "00000000000000000000000000000000");
             }
         }
     }
@@ -1061,22 +1165,26 @@ void testExtentArrayStrings()
 
         awp->setSample(
             ABC::ArraySample(&(vals.front()), dtype,
-            Alembic::Util::Dimensions(3)));
+                             Alembic::Util::Dimensions(3)));
 
         awp->setSample(
             ABC::ArraySample(&(vals2.front()), dtype,
-            Alembic::Util::Dimensions(2)));
+                             Alembic::Util::Dimensions(2)));
 
         std::vector < Alembic::Util::string > badVals(1);
         badVals[0] = "This better fail.";
         TESTING_ASSERT_THROW(awp->setSample(
-            ABC::ArraySample(&(badVals.front()),
-            ABC::DataType(Alembic::Util::kStringPOD, 1),
-            Alembic::Util::Dimensions(1))), Alembic::Util::Exception);
+                                 ABC::ArraySample(&(badVals.front()),
+                                                  ABC::DataType(Alembic::Util::kStringPOD, 1),
+                                                  Alembic::Util::Dimensions(1))), Alembic::Util::Exception);
 
         awp->setSample(
             ABC::ArraySample(&(vals3.front()), dtype,
-            Alembic::Util::Dimensions(2)));
+                             Alembic::Util::Dimensions(2)));
+
+        awp->setSample(
+            ABC::ArraySample(&(vals2.front()), dtype,
+                             Alembic::Util::Dimensions(2)));
 
         std::vector < Alembic::Util::float32_t > vals5(3);
         vals5[0] = 1.0;
@@ -1086,9 +1194,9 @@ void testExtentArrayStrings()
         // this should fail since we are trying to write float data to
         // a string array property
         TESTING_ASSERT_THROW(awp->setSample(
-            ABC::ArraySample(&(vals5.front()),
-            ABC::DataType(Alembic::Util::kFloat32POD, 1),
-            Alembic::Util::Dimensions(3))), Alembic::Util::Exception);
+                                 ABC::ArraySample(&(vals5.front()),
+                                                  ABC::DataType(Alembic::Util::kFloat32POD, 1),
+                                                  Alembic::Util::Dimensions(3))), Alembic::Util::Exception);
     }
 
     {
@@ -1101,13 +1209,19 @@ void testExtentArrayStrings()
         ABC::BasePropertyReaderPtr bp = parent->getProperty( 0 );
         TESTING_ASSERT(bp->isArray());
         ABC::ArrayPropertyReaderPtr ap = bp->asArrayPtr();
-        TESTING_ASSERT(ap->getNumSamples() == 3);
+        TESTING_ASSERT(ap->getNumSamples() == 4);
 
         ABC::ArraySamplePtr val;
 
         ap->getSample(0, val);
         TESTING_ASSERT(val->getDimensions().numPoints() == 3);
         TESTING_ASSERT(val->getDimensions().rank() == 1);
+
+        Dimensions dims0;
+        ap->getDimensions(0, dims0);
+        TESTING_ASSERT(dims0.numPoints() == 3);
+        TESTING_ASSERT(dims0.rank() == 1);
+
         Alembic::Util::string * data = (Alembic::Util::string *)(val->getData());
 
         TESTING_ASSERT(data[0] == "Peanut");
@@ -1125,9 +1239,50 @@ void testExtentArrayStrings()
         TESTING_ASSERT(key.origPOD == Alembic::Util::kStringPOD);
         TESTING_ASSERT(key.readPOD == Alembic::Util::kStringPOD);
         TESTING_ASSERT(key.digest.str() ==
-            "88d5ea1d772131992c9be9a192938df7");
+                       "88d5ea1d772131992c9be9a192938df7");
 
         ap->getSample(1, val);
+        TESTING_ASSERT(val->getDimensions().numPoints() == 2);
+        TESTING_ASSERT(val->getDimensions().rank() == 1);
+
+        ap->getDimensions(1, dims0);
+        TESTING_ASSERT(dims0.numPoints() == 2);
+        TESTING_ASSERT(dims0.rank() == 1);
+
+        data = (Alembic::Util::string *)(val->getData());
+        TESTING_ASSERT(data[0] == "");
+        TESTING_ASSERT(data[1] == "Is the cake really a lie?");
+        TESTING_ASSERT(data[2] == "");
+        TESTING_ASSERT(data[3] == "I certainly hope not.");
+        TESTING_ASSERT(ap->getKey(1, key));
+        TESTING_ASSERT(key.numBytes == 50);
+        TESTING_ASSERT(key.origPOD == Alembic::Util::kStringPOD);
+        TESTING_ASSERT(key.readPOD == Alembic::Util::kStringPOD);
+        TESTING_ASSERT(key.digest.str() ==
+                       "126ebab40166a642d3c8cc4c5929074d");
+
+        ap->getSample(2, val);
+        TESTING_ASSERT(val->getDimensions().numPoints() == 2);
+        TESTING_ASSERT(val->getDimensions().rank() == 1);
+        ap->getDimensions(2, dims0);
+        TESTING_ASSERT(dims0.numPoints() == 2);
+        TESTING_ASSERT(dims0.rank() == 1);
+        data = (Alembic::Util::string *)(val->getData());
+        TESTING_ASSERT(data[0] == "Is the cake really a lie?");
+        TESTING_ASSERT(data[1] == "");
+        TESTING_ASSERT(data[2] == "");
+        TESTING_ASSERT(data[3] == "I certainly hope not.");
+        TESTING_ASSERT(ap->getKey(2, key));
+        TESTING_ASSERT(key.numBytes == 50);
+        TESTING_ASSERT(key.origPOD == Alembic::Util::kStringPOD);
+        TESTING_ASSERT(key.readPOD == Alembic::Util::kStringPOD);
+        TESTING_ASSERT(key.digest.str() ==
+                       "a197a3747b0666dfacdc17634f5cabff");
+
+        ap->getSample(3, val);
+        ap->getDimensions(3, dims0);
+        TESTING_ASSERT(dims0.numPoints() == 2);
+        TESTING_ASSERT(dims0.rank() == 1);
         TESTING_ASSERT(val->getDimensions().numPoints() == 2);
         TESTING_ASSERT(val->getDimensions().rank() == 1);
         data = (Alembic::Util::string *)(val->getData());
@@ -1140,22 +1295,7 @@ void testExtentArrayStrings()
         TESTING_ASSERT(key.origPOD == Alembic::Util::kStringPOD);
         TESTING_ASSERT(key.readPOD == Alembic::Util::kStringPOD);
         TESTING_ASSERT(key.digest.str() ==
-            "126ebab40166a642d3c8cc4c5929074d");
-
-        ap->getSample(2, val);
-        TESTING_ASSERT(val->getDimensions().numPoints() == 2);
-        TESTING_ASSERT(val->getDimensions().rank() == 1);
-        data = (Alembic::Util::string *)(val->getData());
-        TESTING_ASSERT(data[0] == "Is the cake really a lie?");
-        TESTING_ASSERT(data[1] == "");
-        TESTING_ASSERT(data[2] == "");
-        TESTING_ASSERT(data[3] == "I certainly hope not.");
-        TESTING_ASSERT(ap->getKey(2, key));
-        TESTING_ASSERT(key.numBytes == 50);
-        TESTING_ASSERT(key.origPOD == Alembic::Util::kStringPOD);
-        TESTING_ASSERT(key.readPOD == Alembic::Util::kStringPOD);
-        TESTING_ASSERT(key.digest.str() ==
-            "a197a3747b0666dfacdc17634f5cabff");
+                       "126ebab40166a642d3c8cc4c5929074d");
     }
 }
 

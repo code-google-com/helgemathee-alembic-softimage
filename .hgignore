@@ -10,3 +10,11 @@ syntax: glob
 out
 thirdparty
 Deploy
+references
+*.dll
+*.exp
+*.ilk
+*.user
+softimage/alembic/Application/Plugins/bin
+*.ncb
+*.suo

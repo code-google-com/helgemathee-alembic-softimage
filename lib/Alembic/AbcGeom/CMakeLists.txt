@@ -1,7 +1,8 @@
 ##-*****************************************************************************
 ##
-## Copyright (c) 2009-2010, Industrial Light & Magic,
-##   a division of Lucasfilm Entertainment Company Ltd.
+## Copyright (c) 2009-2011,
+##  Sony Pictures Imageworks Inc. and
+##  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 ##
 ## All rights reserved.
 ##
@@ -35,24 +36,43 @@
 # C++ files for this project
 SET( CXX_FILES
 
+  ArchiveBounds.cpp
+
   GeometryScope.cpp
 
-  OSubD.cpp
-  ISubD.cpp
+  FilmBackXformOp.cpp
+  CameraSample.cpp
+  ICamera.cpp
+  OCamera.cpp
+
+  Basis.cpp
+  ICurves.cpp
+  OCurves.cpp
+
+  OFaceSet.cpp
+  IFaceSet.cpp
 
   OGeomParam.cpp
   IGeomParam.cpp
 
+  ONuPatch.cpp
+  INuPatch.cpp
+
+  OPoints.cpp
+  IPoints.cpp
+
   OPolyMesh.cpp
   IPolyMesh.cpp
+
+  OSubD.cpp
+  ISubD.cpp
+
+  Visibility.cpp
 
   XformOp.cpp
   XformSample.cpp
   IXform.cpp
   OXform.cpp
-
-  OPoints.cpp
-  IPoints.cpp
 )
 
 SET( H_FILES
@@ -61,26 +81,50 @@ SET( H_FILES
 
   Foundation.h
 
+  ArchiveBounds.h
+
+  IGeomBase.h
+  OGeomBase.h
+
   GeometryScope.h
+
+  SchemaInfoDeclarations.h
+
+  FilmBackXformOp.h
+  CameraSample.h
+  ICamera.h
+  OCamera.h
+
+  Basis.h
+  CurveType.h
+  ICurves.h
+  OCurves.h
+
+  FaceSetExclusivity.h
+  OFaceSet.h
+  IFaceSet.h
+
+  ONuPatch.h
+  INuPatch.h
 
   OGeomParam.h
   IGeomParam.h
 
-  OSubD.h
-  ISubD.h
+  OPoints.h
+  IPoints.h
 
   OPolyMesh.h
   IPolyMesh.h
+
+  OSubD.h
+  ISubD.h
+
+  Visibility.h
 
   XformOp.h
   XformSample.h
   IXform.h
   OXform.h
-
-  OPoints.h
-  IPoints.h
-
-  SchemaInfoDeclarations.h
 )
 
 SET( SOURCE_FILES ${CXX_FILES} ${H_FILES} )

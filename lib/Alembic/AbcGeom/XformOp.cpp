@@ -40,12 +40,12 @@
 
 namespace Alembic {
 namespace AbcGeom {
+namespace ALEMBIC_VERSION_NS {
 
 //-*****************************************************************************
 XformOp::XformOp()
   : m_type( kTranslateOperation )
   , m_hint( 0 )
-  , m_opName( ".t" )
 {
     m_channels.clear();
     m_channels.resize( 3 );
@@ -55,29 +55,29 @@ XformOp::XformOp()
 XformOp::XformOp( const XformOperationType iType,
                   const Alembic::Util::uint8_t iHint )
     : m_type( iType )
-    , m_hint( iHint )
 {
     m_channels.clear();
 
     switch ( m_type )
     {
-    case kScaleOperation:
-        m_opName = ".s";
-        m_channels.resize( 3 );
+    case kRotateXOperation:
+    case kRotateYOperation:
+    case kRotateZOperation:
+        m_channels.resize( 1 );
         break;
+    case kScaleOperation:
     case kTranslateOperation:
-        m_opName = ".t";
         m_channels.resize( 3 );
         break;
     case kRotateOperation:
-        m_opName = ".r";
         m_channels.resize( 4 );
         break;
     case kMatrixOperation:
-        m_opName = ".m";
         m_channels.resize( 16 );
         break;
     }
+
+    setHint( iHint );
 }
 
 //-*****************************************************************************
@@ -85,24 +85,23 @@ XformOp::XformOp( const Alembic::Util::uint8_t iEncodedOp )
 {
 
     m_type = (XformOperationType)(iEncodedOp >> 4);
-    m_hint = iEncodedOp & 0xF;
+    setHint( iEncodedOp & 0xF );
 
     switch ( m_type )
     {
-    case kScaleOperation:
-        m_opName = ".s";
-        m_channels.resize( 3 );
+    case kRotateXOperation:
+    case kRotateYOperation:
+    case kRotateZOperation:
+        m_channels.resize( 1 );
         break;
+    case kScaleOperation:
     case kTranslateOperation:
-        m_opName = ".t";
         m_channels.resize( 3 );
         break;
     case kRotateOperation:
-        m_opName = ".r";
         m_channels.resize( 4 );
         break;
     case kMatrixOperation:
-        m_opName = ".m";
         m_channels.resize( 16 );
         break;
     }
@@ -118,20 +117,24 @@ XformOperationType XformOp::getType() const
 void XformOp::setType( const XformOperationType iType )
 {
     m_type = iType;
+    m_hint = 0;
 
     switch ( m_type )
     {
-    case kScaleOperation:
-        m_opName = ".s";
+    case kRotateXOperation:
+    case kRotateYOperation:
+    case kRotateZOperation:
+        m_channels.resize( 1 );
         break;
+    case kScaleOperation:
     case kTranslateOperation:
-        m_opName = ".t";
+        m_channels.resize( 3 );
         break;
     case kRotateOperation:
-        m_opName = ".r";
+        m_channels.resize( 4 );
         break;
     case kMatrixOperation:
-        m_opName = ".m";
+        m_channels.resize( 16 );
         break;
     }
 }
@@ -155,7 +158,9 @@ void XformOp::setHint( const Alembic::Util::uint8_t iHint )
     {
         m_hint = 0;
     }
-    else if ( m_type == kRotateOperation && iHint > kRotateOrientationHint )
+    else if ( ( m_type == kRotateOperation || m_type == kRotateXOperation ||
+        m_type == kRotateYOperation || m_type == kRotateZOperation )
+         && iHint > kRotateOrientationHint )
     {
         m_hint = 0;
     }
@@ -172,24 +177,48 @@ void XformOp::setHint( const Alembic::Util::uint8_t iHint )
 //-*****************************************************************************
 bool XformOp::isXAnimated() const
 {
+    if ( m_type == kRotateXOperation || m_type == kRotateYOperation ||
+         m_type == kRotateZOperation )
+    {
+        return false;
+    }
+
     return m_animChannels.count( 0 ) > 0;
 }
 
 //-*****************************************************************************
 bool XformOp::isYAnimated() const
 {
+    if ( m_type == kRotateXOperation || m_type == kRotateYOperation ||
+         m_type == kRotateZOperation )
+    {
+        return false;
+    }
+
     return m_animChannels.count( 1 ) > 0;
 }
 
 //-*****************************************************************************
 bool XformOp::isZAnimated() const
 {
+    if ( m_type == kRotateXOperation || m_type == kRotateYOperation ||
+         m_type == kRotateZOperation )
+    {
+        return false;
+    }
+
     return m_animChannels.count( 2 ) > 0;
 }
 
 //-*****************************************************************************
 bool XformOp::isAngleAnimated() const
 {
+    if ( m_type == kRotateXOperation || m_type == kRotateYOperation ||
+         m_type == kRotateZOperation )
+    {
+        return m_animChannels.count( 0 ) > 0;
+    }
+
     return m_animChannels.count( 3 ) > 0;
 }
 
@@ -206,106 +235,15 @@ std::size_t XformOp::getNumChannels() const
 }
 
 //-*****************************************************************************
-std::string XformOp::getChannelName( std::size_t iIndex ) const
-{
-    std::string c;
-
-    switch ( iIndex )
-    {
-    case 0:
-        if ( m_type != kMatrixOperation ) { c = "x_"; }
-        else { c = "00_"; }
-        break;
-    case 1:
-        if ( m_type != kMatrixOperation ) { c = "y_"; }
-        else { c = "01_"; }
-        break;
-    case 2:
-        if ( m_type != kMatrixOperation ) { c = "z_"; }
-        else { c = "02_"; }
-        break;
-    case 3:
-        if ( m_type == kRotateOperation ) { c = "r_"; }
-        else if ( m_type == kMatrixOperation ) { c = "03_"; }
-        else
-        {
-            ABCA_ASSERT( false,
-                         "Bad index '" << iIndex << "' for non-matrix or "
-                         << "non-rotation xform op." );
-        }
-        break;
-    case 4:
-        ABCA_ASSERT( m_type == kMatrixOperation,
-                     "Bad index '" << iIndex << "' for non-matrix xform op." );
-        c = "10_";
-        break;
-    case 5:
-        ABCA_ASSERT( m_type == kMatrixOperation,
-                     "Bad index '" << iIndex << "' for non-matrix xform op." );
-        c = "11_";
-        break;
-    case 6:
-        ABCA_ASSERT( m_type == kMatrixOperation,
-                     "Bad index '" << iIndex << "' for non-matrix xform op." );
-        c = "12_";
-        break;
-    case 7:
-        ABCA_ASSERT( m_type == kMatrixOperation,
-                     "Bad index '" << iIndex << "' for non-matrix xform op." );
-        c = "13_";
-        break;
-    case 8:
-        ABCA_ASSERT( m_type == kMatrixOperation,
-                     "Bad index '" << iIndex << "' for non-matrix xform op." );
-        c = "20_";
-        break;
-    case 9:
-        ABCA_ASSERT( m_type == kMatrixOperation,
-                     "Bad index '" << iIndex << "' for non-matrix xform op." );
-        c = "21_";
-        break;
-    case 10:
-        ABCA_ASSERT( m_type == kMatrixOperation,
-                     "Bad index '" << iIndex << "' for non-matrix xform op." );
-        c = "22_";
-        break;
-    case 11:
-        ABCA_ASSERT( m_type == kMatrixOperation,
-                     "Bad index '" << iIndex << "' for non-matrix xform op." );
-        c = "23_";
-        break;
-    case 12:
-        ABCA_ASSERT( m_type == kMatrixOperation,
-                     "Bad index '" << iIndex << "' for non-matrix xform op." );
-        c = "30_";
-        break;
-    case 13:
-        ABCA_ASSERT( m_type == kMatrixOperation,
-                     "Bad index '" << iIndex << "' for non-matrix xform op." );
-        c = "31_";
-        break;
-    case 14:
-        ABCA_ASSERT( m_type == kMatrixOperation,
-                     "Bad index '" << iIndex << "' for non-matrix xform op." );
-        c = "32_";
-        break;
-    case 15:
-        ABCA_ASSERT( m_type == kMatrixOperation,
-                     "Bad index '" << iIndex << "' for non-matrix xform op." );
-        c = "33_";
-        break;
-    }
-
-    return ( boost::format( "%s%s" ) % m_opName % c ).str();
-}
-
-//-*****************************************************************************
 double XformOp::getDefaultChannelValue( std::size_t iIndex ) const
 {
     switch ( m_type )
     {
     case kTranslateOperation:
     case kRotateOperation:
+    case kRotateXOperation:
+    case kRotateYOperation:
+    case kRotateZOperation:
         return 0.0;
     case kScaleOperation:
         return 1.0;
@@ -368,6 +306,24 @@ bool XformOp::isMatrixOp() const
 }
 
 //-*****************************************************************************
+bool XformOp::isRotateXOp() const
+{
+    return m_type == kRotateXOperation;
+}
+
+//-*****************************************************************************
+bool XformOp::isRotateYOp() const
+{
+    return m_type == kRotateYOperation;
+}
+
+//-*****************************************************************************
+bool XformOp::isRotateZOp() const
+{
+    return m_type == kRotateZOperation;
+}
+
+//-*****************************************************************************
 void XformOp::setVector( const Abc::V3d &iVec )
 {
     ABCA_ASSERT( m_type != kMatrixOperation,
@@ -400,7 +356,8 @@ void XformOp::setScale( const Abc::V3d &iScale )
 void XformOp::setAxis( const Abc::V3d &iAxis )
 {
     ABCA_ASSERT( m_type == kRotateOperation,
-                 "Meaningless to set rotation axis on non-rotation op." );
+                 "Meaningless to set rotation axis on non-rotation or fixed "
+                 "angle rotation op." );
 
     this->setVector( iAxis );
 }
@@ -408,10 +365,19 @@ void XformOp::setAxis( const Abc::V3d &iAxis )
 //-*****************************************************************************
 void XformOp::setAngle( const double iAngle )
 {
-    ABCA_ASSERT( m_type == kRotateOperation,
-                 "Meaningless to set rotation angle on non-rotation op." );
-
-    m_channels[3] = iAngle;
+    switch ( m_type )
+    {
+    case kRotateOperation:
+        m_channels[3] = iAngle;
+        break;
+    case kRotateXOperation:
+    case kRotateYOperation:
+    case kRotateZOperation:
+        m_channels[0] = iAngle;
+        break;
+    default:
+        ABCA_THROW( "Meaningless to set rotation angle on non-rotation op." );
+    }
 }
 
 //-*****************************************************************************
@@ -459,19 +425,102 @@ Abc::V3d XformOp::getScale() const
 //-*****************************************************************************
 Abc::V3d XformOp::getAxis() const
 {
-    ABCA_ASSERT( m_type == kRotateOperation,
-                 "Meaningless to get rotation axis from non-rotation op." );
+    switch ( m_type )
+    {
+    case kRotateOperation:
+        return this->getVector();
+    case kRotateXOperation:
+        return Abc::V3d(1.0, 0.0, 0.0);
+    case kRotateYOperation:
+        return Abc::V3d(0.0, 1.0, 0.0);
+    case kRotateZOperation:
+        return Abc::V3d(0.0, 0.0, 1.0);
+    default:
+        ABCA_THROW( "Meaningless to get rotation axis from non-rotation op." );
+    }
 
-    return this->getVector();
+    return Abc::V3d(0.0, 0.0, 0.0);
 }
 
 //-*****************************************************************************
 double XformOp::getAngle() const
 {
-    ABCA_ASSERT( m_type == kRotateOperation,
+    switch ( m_type )
+    {
+    case kRotateOperation:
+        return m_channels[3];
+    case kRotateXOperation:
+    case kRotateYOperation:
+    case kRotateZOperation:
+        return m_channels[0];
+    default:
+        ABCA_THROW( "Meaningless to get rotation angle from non-rotation op." );
+    }
+
+    return 0.0;
+}
+
+//-*****************************************************************************
+double XformOp::getXRotation() const
+{
+    ABCA_ASSERT( m_type == kRotateOperation || m_type == kRotateXOperation,
                  "Meaningless to get rotation angle from non-rotation op." );
 
-    return m_channels[3];
+    if ( m_type == kRotateXOperation )
+    {
+        return m_channels[0];
+    }
+    else
+    {
+        Abc::M44d m;
+        Abc::V3d rot;
+        m.makeIdentity();
+        m.setAxisAngle( this->getVector(), DegreesToRadians( m_channels[3] ) );
+        Imath::extractEulerXYZ( m, rot );
+        return RadiansToDegrees( rot[0] );
+    }
+}
+
+//-*****************************************************************************
+double XformOp::getYRotation() const
+{
+    ABCA_ASSERT( m_type == kRotateOperation || m_type == kRotateYOperation,
+                 "Meaningless to get rotation angle from non-rotation op." );
+
+    if ( m_type == kRotateYOperation )
+    {
+        return m_channels[0];
+    }
+    else
+    {
+        Abc::M44d m;
+        Abc::V3d rot;
+        m.makeIdentity();
+        m.setAxisAngle( this->getVector(), DegreesToRadians( m_channels[3] ) );
+        Imath::extractEulerXYZ( m, rot );
+        return RadiansToDegrees( rot[1] );
+    }
+}
+
+//-*****************************************************************************
+double XformOp::getZRotation() const
+{
+    ABCA_ASSERT( m_type == kRotateOperation || m_type == kRotateZOperation,
+                 "Meaningless to get rotation angle from non-rotation op." );
+
+    if ( m_type == kRotateZOperation )
+    {
+        return m_channels[0];
+    }
+    else
+    {
+        Abc::M44d m;
+        Abc::V3d rot;
+        m.makeIdentity();
+        m.setAxisAngle( this->getVector(), DegreesToRadians( m_channels[3] ) );
+        Imath::extractEulerXYZ( m, rot );
+        return RadiansToDegrees( rot[2] );
+    }
 }
 
 //-*****************************************************************************
@@ -493,5 +542,6 @@ Abc::M44d XformOp::getMatrix() const
     return ret;
 }
 
+} // End namespace ALEMBIC_VERSION_NS
 } // End namespace AbcGeom
 } // End namespace Alembic

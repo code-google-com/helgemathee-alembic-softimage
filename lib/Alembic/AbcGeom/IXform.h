@@ -44,6 +44,7 @@
 
 namespace Alembic {
 namespace AbcGeom {
+namespace ALEMBIC_VERSION_NS {
 
 //-*****************************************************************************
 class IXformSchema : public Abc::ISchema<XformSchemaInfo>
@@ -75,11 +76,11 @@ public:
     //! can be used to override the ErrorHandlerPolicy, to specify
     //! MetaData, and to set TimeSamplingType.
     template <class CPROP_PTR>
-    IXformSchema( CPROP_PTR iParentObject,
+    IXformSchema( CPROP_PTR iParent,
                   const std::string &iName,
                   const Abc::Argument &iArg0 = Abc::Argument(),
                   const Abc::Argument &iArg1 = Abc::Argument() )
-      : Abc::ISchema<XformSchemaInfo>( iParentObject, iName,
+      : Abc::ISchema<XformSchemaInfo>( iParent, iName,
                                        iArg0, iArg1 )
     {
         // Meta data and error handling are eaten up by
@@ -90,11 +91,11 @@ public:
     //! This constructor does the same as the above, but uses the default
     //! name from the XformSchemaInfo struct.
     template <class CPROP_PTR>
-    explicit IXformSchema( CPROP_PTR iParentObject,
+    explicit IXformSchema( CPROP_PTR iParent,
 
                            const Abc::Argument &iArg0 = Abc::Argument(),
                            const Abc::Argument &iArg1 = Abc::Argument() )
-      : Abc::ISchema<XformSchemaInfo>( iParentObject, iArg0, iArg1 )
+      : Abc::ISchema<XformSchemaInfo>( iParent, iArg0, iArg1 )
     {
         init( Abc::GetSchemaInterpMatching( iArg0, iArg1 ) );
     }
@@ -113,6 +114,7 @@ public:
 
     //! explicit copy constructor to work around Windows compiler bug
     IXformSchema( const IXformSchema &iCopy )
+        : Abc::ISchema<XformSchemaInfo>()
     {
         *this = iCopy;
     }
@@ -133,23 +135,27 @@ public:
     XformSample getValue( const Abc::ISampleSelector &iSS =
                           Abc::ISampleSelector() );
 
+    Abc::IBox3dProperty getChildBoundsProperty() { return m_childBoundsProperty; }
+
     // lightweight get to avoid constructing a sample
     // see XformSample.h for explanation of this property
     bool getInheritsXforms( const Abc::ISampleSelector &iSS =
                             Abc::ISampleSelector() );
 
-    size_t getNumOps() const { return m_opArray.size(); }
+    size_t getNumOps() const { return m_sample.getNumOps(); }
 
     //! Reset returns this function set to an empty, default
     //! state.
     void reset()
     {
-        m_props.resize( 0 );
-
-        m_childBounds.reset();
-        m_ops.reset();
-        m_inherits.reset();
+        m_childBoundsProperty.reset();
+        m_sample = XformSample();
+        m_inheritsProperty.reset();
         m_isConstant = true;
+        m_isConstantIdentity = true;
+
+        m_arbGeomParams.reset();
+        m_userProperties.reset();
 
         super_type::reset();
     }
@@ -157,8 +163,12 @@ public:
     //! Valid returns whether this function set is valid.
     bool valid() const
     {
-        return ( m_ops && super_type::valid() );
+        return ( super_type::valid() );
     }
+
+    ICompoundProperty getArbGeomParams() { return m_arbGeomParams; }
+
+    ICompoundProperty getUserProperties() { return m_userProperties; }
 
     //! unspecified-bool-type operator overload.
     //! ...
@@ -166,100 +176,40 @@ public:
 
 
 protected:
-    class IDefaultedDoubleProperty; // forward
+    Abc::IBox3dProperty m_childBoundsProperty;
 
-    Abc::IBox3dProperty m_childBounds;
+    AbcA::BasePropertyReaderPtr m_valsProperty;
 
-    Abc::IUcharArrayProperty m_ops;
+    Abc::IBoolProperty m_inheritsProperty;
 
-    std::vector<IDefaultedDoubleProperty> m_props;
-
-    Abc::IBoolProperty m_inherits;
+    Abc::ICompoundProperty m_arbGeomParams;
+    Abc::ICompoundProperty m_userProperties;
 
     bool m_isConstant;
 
     bool m_isConstantIdentity;
 
+    XformSample m_sample;
+
 private:
     void init( Abc::SchemaInterpMatching iMatching );
-    // the op array is strictly for default names and values
-    // for the IDefaultedDoubleProperties made in init()
-    std::vector<XformOp> m_opArray;
 
+    // is m_vals an ArrayProperty, or a ScalarProperty?
+    bool m_useArrayProp;
 
-protected:
-    //-*************************************************************************
-    // HELPER CLASS
-    //-*************************************************************************
-
-    //! The defaulted double property will only create a property
-    //! and only bother setting a value when it the value differs from a
-    //! known default value. This allows transforms to disappear when they
-    //! are identity.
-    //! It has some Xform-specific stuff in here, so not worth
-    //! making general (yet).
-    class IDefaultedDoubleProperty
-    {
-    public:
-        void reset()
-        {
-            m_parent.reset();
-            m_name = "";
-            m_constantValue = 0.0;
-            m_property.reset();
-        }
-
-        IDefaultedDoubleProperty() { reset(); }
-
-        IDefaultedDoubleProperty( AbcA::CompoundPropertyReaderPtr iParent,
-                                  const std::string &iName,
-                                  Abc::ErrorHandler &iHndlr,
-                                  double iDefault )
-          : m_parent( Abc::GetCompoundPropertyReaderPtr( iParent ) )
-          , m_name( iName )
-          , m_constantValue( iDefault )
-          , m_isConstant( true )
-          , m_errorHandler( iHndlr )
-        {
-            init();
-        }
-
-        double getValue( const Abc::ISampleSelector &iSS );
-
-        std::string getName() const { return m_name; }
-
-        bool isConstant() const { return m_isConstant; }
-
-        bool isNonDefault() const { return m_property; }
-
-        Abc::ErrorHandler &getErrorHandler() { return m_errorHandler; }
-        Abc::ErrorHandler::Policy getErrorHandlerPolicy() const
-        { return m_errorHandler.getPolicy(); }
-
-    protected:
-        // Parent.
-        AbcA::CompoundPropertyReaderPtr m_parent;
-
-        // We cache the init stuff.
-        std::string m_name;
-        double m_constantValue;
-        bool m_isConstant;
-
-        Abc::ErrorHandler m_errorHandler;
-
-        // The "it". This may not exist.
-        Abc::IDoubleProperty m_property;
-
-    private:
-        void init();
-    }; // END DEFAULTED DOUBLE PROPERTY CLASS DECLARATION
-
+    // fills m_valVec with data
+    void getChannelValues( const AbcA::index_t iSampleIndex,
+                           XformSample & oSamp );
 };
 
 //-*****************************************************************************
 // SCHEMA OBJECT
 //-*****************************************************************************
 typedef Abc::ISchemaObject<IXformSchema> IXform;
+
+} // End namespace ALEMBIC_VERSION_NS
+
+using namespace ALEMBIC_VERSION_NS;
 
 } // End namespace AbcGeom
 } // End namespace Alembic

@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -38,7 +38,6 @@
 #include <Alembic/AbcCoreHDF5/All.h>
 //#include <Alembic/HDF5/All.h>
 #include <Alembic/Util/All.h>
-#include <Alembic/MD5Hash/All.h>
 
 #include <iostream>
 #include <vector>

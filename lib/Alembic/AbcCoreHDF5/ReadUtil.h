@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks, Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -97,6 +97,13 @@ ReadDimensions( hid_t iParent,
                 Dimensions &oDims );
 
 //-*****************************************************************************
+void
+ReadDataSetDimensions( hid_t iParent,
+                       const std::string &iName,
+                       hsize_t iExtent,
+                       Dimensions &oDims );
+
+//-*****************************************************************************
 AbcA::ArraySamplePtr 
 ReadArray( AbcA::ReadArraySampleCachePtr iCache,
            hid_t iGroup,
@@ -115,12 +122,10 @@ ReadTimeSamples( hid_t iParent,
                  std::vector <  AbcA::TimeSamplingPtr > & oTimeSamples );
 
 } // End namespace ALEMBIC_VERSION_NS
+
 using namespace ALEMBIC_VERSION_NS;
 
 } // End namespace AbcCoreHDF5
-using namespace AbcCoreHDF5;
-
 } // End namespace Alembic
-using namespace Alembic;
 
 #endif

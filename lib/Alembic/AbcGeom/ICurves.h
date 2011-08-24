@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -39,14 +39,17 @@
 
 #include <Alembic/AbcGeom/Foundation.h>
 #include <Alembic/AbcGeom/Basis.h>
+#include <Alembic/AbcGeom/CurveType.h>
 #include <Alembic/AbcGeom/SchemaInfoDeclarations.h>
 #include <Alembic/AbcGeom/IGeomParam.h>
+#include <Alembic/AbcGeom/IGeomBase.h>
 
 namespace Alembic {
 namespace AbcGeom {
+namespace ALEMBIC_VERSION_NS {
 
 //-*****************************************************************************
-class ICurvesSchema : public Abc::ISchema<CurvesSchemaInfo>
+class ICurvesSchema : public IGeomBaseSchema<CurvesSchemaInfo>
 {
 public:
     class Sample
@@ -55,22 +58,22 @@ public:
         typedef Sample this_type;
 
         // Users don't ever create this data directly.
-        Sample() {}
+        Sample() { reset(); }
 
-        Abc::V3fArraySamplePtr getPositions() const { return m_positions; }
+        Abc::P3fArraySamplePtr getPositions() const { return m_positions; }
 
-        std::string getType() const { return m_type; }
-        int getNCurves() const { return m_nCurves; }
-        Abc::Int32ArraySamplePtr getNVertices() const { return m_nVertices; }
-        std::string getWrap() const { return m_wrap; }
+        std::size_t getNumCurves() const
+        {
+            if ( m_nVertices ) { return m_nVertices->size(); }
+            else { return 0; }
+        }
 
-        BasisType getUBasis() const { return static_cast<BasisType>( m_uBasis ); }
-        BasisType getVBasis() const { return static_cast<BasisType>( m_vBasis ); }
+        Abc::Int32ArraySamplePtr getCurvesNumVertices() const
+        { return m_nVertices; }
 
-        Abc::V2fArraySamplePtr getWidths() const { return m_widths; }
-        Abc::V2fArraySamplePtr getUVs() const { return m_uvs; }
-        Abc::V3fArraySamplePtr getNormals() const { return m_normals; }
-
+        CurveType getType() const { return m_type; }
+        CurvePeriodicity getWrap() const { return m_wrap; }
+        BasisType getBasis() const { return m_basis; }
 
         Abc::Box3d getSelfBounds() const { return m_selfBounds; }
         Abc::Box3d getChildBounds() const { return m_childBounds; }
@@ -83,19 +86,11 @@ public:
         void reset()
         {
             m_positions.reset();
-
-            m_widths.reset();
-            m_uvs.reset();
-            m_normals.reset();
-
-            m_nCurves = 1;
-
-            m_type = "cubic";
             m_nVertices.reset();
-            m_wrap = "nonperiodic";
 
-            m_uBasis = kBezierBasis;
-            m_vBasis = kBezierBasis;
+            m_type = kCubic;
+            m_wrap = kNonPeriodic;
+            m_basis = kBezierBasis;
 
             m_selfBounds.makeEmpty();
             m_childBounds.makeEmpty();
@@ -105,39 +100,34 @@ public:
 
     protected:
         friend class ICurvesSchema;
-        Abc::V3fArraySamplePtr m_positions;
+        Abc::P3fArraySamplePtr m_positions;
 
         Abc::Box3d m_selfBounds;
         Abc::Box3d m_childBounds;
 
         // type, wrap, and nVertices
-        std::string m_type;
-        int m_nCurves;
         Abc::Int32ArraySamplePtr m_nVertices;
-        std::string m_wrap;
 
-        uint8_t m_uBasis;
-        uint8_t m_vBasis;
-
-        Abc::V2fArraySamplePtr m_widths;
-        Abc::V2fArraySamplePtr m_uvs;
-        Abc::V3fArraySamplePtr m_normals;
-
+        CurveType m_type;
+        BasisType m_basis;
+        CurvePeriodicity m_wrap;
     };
 
     //-*************************************************************************
-    // POLY MESH SCHEMA
+    // CURVE SCHEMA
     //-*************************************************************************
 public:
     //! By convention we always define this_type in AbcGeom classes.
     //! Used by unspecified-bool-type conversion below
     typedef ICurvesSchema this_type;
 
+    typedef ICurvesSchema::Sample sample_type;
+
     //-*************************************************************************
     // CONSTRUCTION, DESTRUCTION, ASSIGNMENT
     //-*************************************************************************
 
-    //! The default constructor creates an empty OPolyMeshSchema
+    //! The default constructor creates an empty ICurvesSchema
     //! ...
     ICurvesSchema() {}
 
@@ -149,12 +139,11 @@ public:
     //! can be used to override the ErrorHandlerPolicy and to specify
     //! schema interpretation matching.
     template <class CPROP_PTR>
-    ICurvesSchema( CPROP_PTR iParentObject,
+    ICurvesSchema( CPROP_PTR iParent,
                      const std::string &iName,
                      const Abc::Argument &iArg0 = Abc::Argument(),
                      const Abc::Argument &iArg1 = Abc::Argument() )
-      : Abc::ISchema<PolyMeshSchemaInfo>( iParentObject, iName,
-                                            iArg0, iArg1 )
+      : IGeomBaseSchema<CurvesSchemaInfo>( iParent, iName, iArg0, iArg1 )
     {
         init( iArg0, iArg1 );
     }
@@ -162,11 +151,10 @@ public:
     //! This constructor is the same as above, but with default
     //! schema name used.
     template <class CPROP_PTR>
-    explicit ICurvesSchema( CPROP_PTR iParentObject,
-                              const Abc::Argument &iArg0 = Abc::Argument(),
-                              const Abc::Argument &iArg1 = Abc::Argument() )
-      : Abc::ISchema<CurvesSchemaInfo>( iParentObject,
-                                            iArg0, iArg1 )
+    explicit ICurvesSchema( CPROP_PTR iParent,
+                            const Abc::Argument &iArg0 = Abc::Argument(),
+                            const Abc::Argument &iArg1 = Abc::Argument() )
+      : IGeomBaseSchema<CurvesSchemaInfo>( iParent, iArg0, iArg1 )
     {
         init( iArg0, iArg1 );
     }
@@ -174,119 +162,69 @@ public:
     //! Wrap an existing schema object
     template <class CPROP_PTR>
     ICurvesSchema( CPROP_PTR iThis,
-                     Abc::WrapExistingFlag iFlag,
-
-                     const Abc::Argument &iArg0 = Abc::Argument(),
-                     const Abc::Argument &iArg1 = Abc::Argument() )
-      : Abc::ISchema<CurvesSchemaInfo>( iThis, iFlag, iArg0, iArg1 )
+                   Abc::WrapExistingFlag iFlag,
+                   const Abc::Argument &iArg0 = Abc::Argument(),
+                   const Abc::Argument &iArg1 = Abc::Argument() )
+      : IGeomBaseSchema<CurvesSchemaInfo>( iThis, iFlag, iArg0, iArg1 )
     {
         init( iArg0, iArg1 );
     }
 
-    //! Default copy constructor used.
     //! Default assignment operator used.
 
+    ICurvesSchema( const ICurvesSchema &iCopy )
+      : IGeomBaseSchema<CurvesSchemaInfo>()
+    {
+        *this = iCopy;
+    }
 
-    //! Return the number of samples contained in the property.
-    //! This can be any number, including zero.
-    //! This returns the number of samples that were written, independently
-    //! of whether or not they were constant.
-    size_t getNumSamples()
-    { return m_positions.getNumSamples(); }
+    size_t getNumSamples() const
+    { return m_positionsProperty.getNumSamples(); }
 
     //! Return the topological variance.
     //! This indicates how the mesh may change.
-    MeshTopologyVariance getTopologyVariance();
+    MeshTopologyVariance getTopologyVariance() const;
 
     //! Ask if we're constant - no change in value amongst samples,
     //! regardless of the time sampling.
-    bool isConstant() { return getTopologyVariance() == kConstantTopology; }
+    bool isConstant() const
+    { return getTopologyVariance() == kConstantTopology; }
 
     //! Time sampling type.
     //!
-    AbcA::TimeSamplingType getTimeSamplingType() const
+    AbcA::TimeSamplingPtr getTimeSampling() const
     {
-        return m_positions.getTimeSamplingType();
-    }
-
-    //! Time information.
-    AbcA::TimeSampling getTimeSampling()
-    {
-        return m_positions.getTimeSampling();
+        return m_positionsProperty.getTimeSampling();
     }
 
     //-*************************************************************************
-    void get( Sample &oSample,
-              const Abc::ISampleSelector &iSS = Abc::ISampleSelector() )
+    void get( sample_type &oSample,
+              const Abc::ISampleSelector &iSS = Abc::ISampleSelector() );
+
+    sample_type getValue( const Abc::ISampleSelector &iSS =
+                          Abc::ISampleSelector() )
     {
-        ALEMBIC_ABC_SAFE_CALL_BEGIN( "ICurvesSchema::get()" );
-
-        m_positions.get( oSample.m_positions, iSS );
-
-        m_type.get( oSample.m_type, iSS);
-        m_nCurves.get( oSample.m_nCurves, iSS );
-        m_nVertices.get( oSample.m_nVertices, iSS );
-        m_wrap.get( oSample.m_wrap, iSS );
-
-        if ( m_uBasis )
-        {
-            m_uBasis.get( oSample.m_uBasis, iSS );
-        }
-
-        if ( m_vBasis )
-        {
-            m_vBasis.get( oSample.m_vBasis, iSS );
-        }
-
-        if ( m_normals )
-        {
-            m_normals.get( oSample.m_normals, iSS);
-        }
-
-        if ( m_uvs )
-        {
-            m_uvs.get( oSample.m_uvs, iSS);
-        }
-
-        if ( m_widths )
-        {
-            m_widths.get( oSample.m_widths, iSS);
-        }
-
-        if ( m_selfBounds )
-        {
-            m_selfBounds.get( oSample.m_selfBounds, iSS );
-        }
-
-        if ( m_childBounds && m_childBounds.getNumSamples() > 0 )
-        {
-            m_childBounds.get( oSample.m_childBounds, iSS );
-        }
-
-        // Could error check here.
-
-        ALEMBIC_ABC_SAFE_CALL_END();
-    }
-
-    Sample getValue( const Abc::ISampleSelector &iSS = Abc::ISampleSelector() )
-    {
-        Sample smp;
+        sample_type smp;
         get( smp, iSS );
         return smp;
     }
 
 
-    Abc::IV3fArrayProperty &getPositions(){ return m_positions; }
-    Abc::IV2fArrayProperty &getUVs() { return m_uvs; }
-    Abc::IV3fArrayProperty &getNormals() { return m_normals; }
-    Abc::IV2fArrayProperty &getWidths() { return m_widths; }
+    Abc::IP3fArrayProperty getPositionsProperty() const
+    {
+        return m_positionsProperty;
+    }
 
-    Abc::IUcharProperty &getUBasis() { return m_uBasis; }
-    Abc::IUcharProperty &getVBasis() { return m_vBasis; }
+    Abc::IInt32ArrayProperty getNumVerticesProperty() const
+    {
+        return m_nVerticesProperty;
+    }
 
-    // compound property to use as parent for any arbitrary GeomParams
-    // underneath it
-    ICompoundProperty getArbGeomParams() { return m_arbGeomParams; }
+    IV2fGeomParam &getUVsParam() { return m_uvsParam; }
+    IN3fGeomParam &getNormalsParam() { return m_normalsParam; }
+    IFloatGeomParam &getWidthsParam() { return m_widthsParam; }
+
+
 
     //-*************************************************************************
     // ABC BASE MECHANISMS
@@ -298,67 +236,50 @@ public:
     //! state.
     void reset()
     {
-        m_positions.reset();
+        m_positionsProperty.reset();
+        m_nVerticesProperty.reset();
 
-        m_selfBounds.reset();
-        m_childBounds.reset();
+        m_uvsParam.reset();
+        m_normalsParam.reset();
+        m_widthsParam.reset();
 
-        m_type.reset();
-        m_nCurves.reset();
-        m_nVertices.reset();
-        m_wrap.reset();
+        m_basisAndTypeProperty.reset();
 
-        m_uvs.reset();
-        m_normals.reset();
-        m_widths.reset();
-
-        m_uBasis.reset();
-        m_vBasis.reset();
-
-        m_arbGeomParams.reset();
-
-        Abc::ISchema<CurvesSchemaInfo>::reset();
+        IGeomBaseSchema<CurvesSchemaInfo>::reset();
     }
 
     //! Valid returns whether this function set is
     //! valid.
     bool valid() const
     {
-        return ( Abc::ISchema<CurvesSchemaInfo>::valid() &&
-                 m_positions.valid() );
+        return ( IGeomBaseSchema<CurvesSchemaInfo>::valid() &&
+                 m_positionsProperty.valid() && m_nVerticesProperty.valid() );
     }
 
     //! unspecified-bool-type operator overload.
     //! ...
-    ALEMBIC_OVERRIDE_OPERATOR_BOOL( ICurvesSchema::valid() );
+    ALEMBIC_OVERRIDE_OPERATOR_BOOL( this_type::valid() );
 
 protected:
-    void init( const Abc::Argument &iArg0,
-               const Abc::Argument &iArg1 );
+    void init( const Abc::Argument &iArg0, const Abc::Argument &iArg1 );
 
-    Abc::IV3fArrayProperty m_positions;
+    Abc::IP3fArrayProperty m_positionsProperty;
+    Abc::IInt32ArrayProperty m_nVerticesProperty;
 
-    Abc::IV2fArrayProperty m_widths;
-    Abc::IV2fArrayProperty m_uvs;
-    Abc::IV3fArrayProperty m_normals;
+    // contains type, wrap, ubasis, and vbasis.
+    Abc::IScalarProperty m_basisAndTypeProperty;
 
-    Abc::IBox3dProperty m_selfBounds;
-    Abc::IBox3dProperty m_childBounds;
-
-    Abc::IStringProperty m_type;
-    Abc::IInt32Property m_nCurves;
-    Abc::IInt32ArrayProperty  m_nVertices;
-    Abc::IStringProperty m_wrap;
-
-    Abc::ICompoundProperty m_arbGeomParams;
-
-    Abc::IUcharProperty m_uBasis;
-    Abc::IUcharProperty m_vBasis;
-
+    IFloatGeomParam m_widthsParam;
+    IV2fGeomParam m_uvsParam;
+    IN3fGeomParam m_normalsParam;
 };
 
 //-*****************************************************************************
 typedef Abc::ISchemaObject<ICurvesSchema> ICurves;
+
+} // End namespace ALEMBIC_VERSION_NS
+
+using namespace ALEMBIC_VERSION_NS;
 
 } // End namespace AbcGeom
 } // End namespace Alembic

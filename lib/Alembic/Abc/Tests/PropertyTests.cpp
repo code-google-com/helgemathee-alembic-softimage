@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks, Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -44,6 +44,10 @@
 namespace Abc = Alembic::Abc;
 using namespace Abc;
 
+using Alembic::AbcCoreAbstract::chrono_t;
+using Alembic::AbcCoreAbstract::index_t;
+using Alembic::Util::uint32_t;
+
 //
 // The tests in this file are intended to exercize the Abc API;
 //  specifically writing and reading of propertues in parent-child
@@ -53,9 +57,9 @@ using namespace Abc;
 
 void writeSimpleProperties(const std::string &archiveName)
 {
-    const unsigned int numChildren = 3;
+    const int numChildren = 3;
 
-    const unsigned int numSamples = 5;
+    const int numSamples = 5;
     const chrono_t dt = 1.0 / 24.0;
 
     TimeSampling ts(dt, 666.0); // uniform with cycle=dt starting at 666.0
@@ -121,13 +125,10 @@ void readSimpleProperties(const std::string &archiveName)
     IObject archiveTop = archive.getTop();
 
     // Determine the number of (top level) children the archive has
-    const unsigned int numChildren = archiveTop.getNumChildren();
+    const int numChildren = archiveTop.getNumChildren();
     TESTING_ASSERT( numChildren == 4 );
     std::cout << "The archive has " << numChildren << " children:"
               << std::endl;
-
-
-
 
     // Iterate through them, print out their names
     for (int ii=0; ii<numChildren; ii++)
@@ -140,7 +141,7 @@ void readSimpleProperties(const std::string &archiveName)
 
         // Properties
         ICompoundProperty props = child.getProperties();
-        size_t numProperties = props.getNumProperties();
+        int numProperties = props.getNumProperties();
 
         std::cout << "  ..and " << numProperties << " simple properties"
                   << std::endl;
@@ -233,13 +234,12 @@ void readSimpleProperties(const std::string &archiveName)
                 GetCompoundPropertyReaderPtr(props)->
                 getScalarProperty( propNames[jj] )->getTimeSampling();
 
-            size_t numSamples = ts->getNumSamples();
+            int numSamples = ts->getNumStoredTimes();
 
 
             std::cout << "    ..and "
                       << ts->getTimeSamplingType() << std::endl
                       << "    ..and " << numSamples << " samples at times: ";
-
 
             if (numSamples > 0)
             {
@@ -364,7 +364,7 @@ void readSimpleProperties(const std::string &archiveName)
 
 void writeEmptyCompoundProperties(const std::string &archiveName)
 {
-    const unsigned int numChildren = 2;
+    const int numChildren = 2;
 
     // Create an archive for writing. Indicate that we want Alembic to
     //   throw exceptions on errors.
@@ -404,7 +404,7 @@ void readEmptyCompoundProperties(const std::string &archiveName)
     IObject archiveTop = archive.getTop();
 
     // Determine the number of (top level) children the archive has
-    const unsigned int numChildren = archiveTop.getNumChildren();
+    const int numChildren = archiveTop.getNumChildren();
     ABCA_ASSERT( numChildren == 2, "Wrong number of children (expected 2)");
     std::cout << "The archive has " << numChildren << " children:"
               << std::endl;
@@ -420,7 +420,7 @@ void readEmptyCompoundProperties(const std::string &archiveName)
 
         // Properties
         ICompoundProperty props = child.getProperties();
-        size_t numProperties = props.getNumProperties();
+        int numProperties = props.getNumProperties();
 
         std::cout << "  ..and " << numProperties << " properties"
                   << std::endl;

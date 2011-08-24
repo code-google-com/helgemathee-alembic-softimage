@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -67,19 +67,20 @@ ArImpl::ArImpl( const std::string &iFileName,
     ABCA_ASSERT(version == ALEMBIC_HDF5_FILE_VERSION,
         "Unsupported file version detected.");
 
+    // if it isn't there, it's pre 1.0
+    int32_t fileVersion = 9999;
+    if (H5Aexists( m_file, "abc_release_version" ))
+    {
+        H5LTget_attribute_int( m_file, ".", "abc_release_version",
+                               &fileVersion);
+    }
+    m_archiveVersion = fileVersion;
+
     // Read the top object
     m_top = new TopOrImpl( *this, m_file );
 
     ReadTimeSamples( m_file, m_timeSamples );
 }
-
-//-*****************************************************************************
-ArImpl::ArImpl( const ArImpl &iCopy )
-  : m_fileName( iCopy.m_fileName )
-  , m_file( iCopy.m_file )
-  , m_top( iCopy.m_top )
-  , m_readArraySampleCache( iCopy.m_readArraySampleCache )
-{}
 
 //-*****************************************************************************
 const std::string &ArImpl::getName() const

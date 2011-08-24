@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -477,7 +477,7 @@ void WriteTimeSampling( hid_t iGroup,
     //-*************************************************************************
     std::string timeSampsName = iName + ".time";
 
-    const std::vector < chrono_t > & samps = iTsmp.getSampleTimes();
+    const std::vector < chrono_t > & samps = iTsmp.getStoredTimes();
     ABCA_ASSERT( samps.size() > 0, "No TimeSamples to write!");
     H5LTset_attribute_double ( iGroup, ".", timeSampsName.c_str(),
         &samps.front(), samps.size() );

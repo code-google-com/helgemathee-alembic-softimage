@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks, Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -39,13 +39,16 @@
 
 #include <Alembic/AbcGeom/Foundation.h>
 #include <Alembic/AbcGeom/SchemaInfoDeclarations.h>
+#include <Alembic/AbcGeom/OFaceSet.h>
 #include <Alembic/AbcGeom/OGeomParam.h>
+#include <Alembic/AbcGeom/OGeomBase.h>
 
 namespace Alembic {
 namespace AbcGeom {
+namespace ALEMBIC_VERSION_NS {
 
 //-*****************************************************************************
-class OPolyMeshSchema : public Abc::OSchema<PolyMeshSchemaInfo>
+class OPolyMeshSchema : public OGeomBaseSchema<PolyMeshSchemaInfo>
 {
 public:
     //-*************************************************************************
@@ -56,11 +59,11 @@ public:
     public:
         //! Creates a default sample with no data in it.
         //! ...
-        Sample() {}
+        Sample() { reset(); }
 
         //! Creates a sample with position data but no index
         //! or count data. For specifying samples after the first one
-        Sample( const Abc::V3fArraySample &iPos )
+        Sample( const Abc::P3fArraySample &iPos )
           : m_positions( iPos ) {}
 
 
@@ -69,7 +72,7 @@ public:
         //! For specifying samples with an explicit topology. The first
         //! sample must be full like this. Subsequent samples may also
         //! be full like this, which would indicate a change of topology
-        Sample( const Abc::V3fArraySample &iPos,
+        Sample( const Abc::P3fArraySample &iPos,
                 const Abc::Int32ArraySample &iInd,
                 const Abc::Int32ArraySample &iCnt,
                 const OV2fGeomParam::Sample &iUVs = OV2fGeomParam::Sample(),
@@ -81,16 +84,16 @@ public:
           , m_normals( iNormals )
         {}
 
-        const Abc::V3fArraySample &getPositions() const { return m_positions; }
-        void setPositions( const Abc::V3fArraySample &iSmp )
+        const Abc::P3fArraySample &getPositions() const { return m_positions; }
+        void setPositions( const Abc::P3fArraySample &iSmp )
         { m_positions = iSmp; }
 
-        const Abc::Int32ArraySample &getIndices() const { return m_indices; }
-        void setIndices( const Abc::Int32ArraySample &iSmp )
+        const Abc::Int32ArraySample &getFaceIndices() const { return m_indices; }
+        void setFaceIndices( const Abc::Int32ArraySample &iSmp )
         { m_indices = iSmp; }
 
-        const Abc::Int32ArraySample &getCounts() const { return m_counts; }
-        void setCounts( const Abc::Int32ArraySample &iCnt )
+        const Abc::Int32ArraySample &getFaceCounts() const { return m_counts; }
+        void setFaceCounts( const Abc::Int32ArraySample &iCnt )
         { m_counts = iCnt; }
 
         const Abc::Box3d &getSelfBounds() const { return m_selfBounds; }
@@ -123,7 +126,7 @@ public:
         }
 
     protected:
-        Abc::V3fArraySample m_positions;
+        Abc::P3fArraySample m_positions;
         Abc::Int32ArraySample m_indices;
         Abc::Int32ArraySample m_counts;
 
@@ -158,14 +161,14 @@ public:
     //! can be used to override the ErrorHandlerPolicy, to specify
     //! MetaData, and to set TimeSamplingType.
     template <class CPROP_PTR>
-    OPolyMeshSchema( CPROP_PTR iParentObject,
+    OPolyMeshSchema( CPROP_PTR iParent,
                      const std::string &iName,
 
                      const Abc::Argument &iArg0 = Abc::Argument(),
                      const Abc::Argument &iArg1 = Abc::Argument(),
                      const Abc::Argument &iArg2 = Abc::Argument() )
-      : Abc::OSchema<PolyMeshSchemaInfo>( iParentObject, iName,
-                                            iArg0, iArg1, iArg2 )
+      : OGeomBaseSchema<PolyMeshSchemaInfo>( iParent, iName,
+                                          iArg0, iArg1, iArg2 )
     {
 
         AbcA::TimeSamplingPtr tsPtr =
@@ -178,7 +181,7 @@ public:
         // 0 index
         if (tsPtr)
         {
-            tsIndex = iParentObject->getObject()->getArchive(
+            tsIndex = iParent->getObject()->getArchive(
                 )->addTimeSampling(*tsPtr);
         }
 
@@ -188,11 +191,11 @@ public:
     }
 
     template <class CPROP_PTR>
-    explicit OPolyMeshSchema( CPROP_PTR iParentObject,
+    explicit OPolyMeshSchema( CPROP_PTR iParent,
                               const Abc::Argument &iArg0 = Abc::Argument(),
                               const Abc::Argument &iArg1 = Abc::Argument(),
                               const Abc::Argument &iArg2 = Abc::Argument() )
-      : Abc::OSchema<PolyMeshSchemaInfo>( iParentObject,
+      : OGeomBaseSchema<PolyMeshSchemaInfo>( iParent,
                                             iArg0, iArg1, iArg2 )
     {
 
@@ -206,7 +209,7 @@ public:
         // 0 index
         if (tsPtr)
         {
-            tsIndex = iParentObject->getObject()->getArchive(
+            tsIndex = iParent->getObject()->getArchive(
                 )->addTimeSampling(*tsPtr);
         }
 
@@ -216,7 +219,8 @@ public:
     }
 
     //! Copy constructor.
-    OPolyMeshSchema(const OPolyMeshSchema& iCopy)
+    OPolyMeshSchema( const OPolyMeshSchema& iCopy )
+        : OGeomBaseSchema<PolyMeshSchemaInfo>()
     {
         *this = iCopy;
     }
@@ -230,7 +234,7 @@ public:
     //! Return the time sampling type, which is stored on each of the
     //! sub properties.
     AbcA::TimeSamplingPtr getTimeSampling() const
-    { return m_positions.getTimeSampling(); }
+    { return m_positionsProperty.getTimeSampling(); }
 
     //-*************************************************************************
     // SAMPLE STUFF
@@ -239,7 +243,7 @@ public:
     //! Get number of samples written so far.
     //! ...
     size_t getNumSamples()
-    { return m_positions.getNumSamples(); }
+    { return m_positionsProperty.getNumSamples(); }
 
     //! Set a sample! Sample zero has to have non-degenerate
     //! positions, indices and counts.
@@ -249,7 +253,8 @@ public:
     //! indices, and counts.
     void setFromPrevious();
 
-    Abc::OCompoundProperty getArbGeomParams();
+    void setTimeSampling( uint32_t iIndex );
+    void setTimeSampling( AbcA::TimeSamplingPtr iTime );
 
     //-*************************************************************************
     // ABC BASE MECHANISMS
@@ -261,27 +266,33 @@ public:
     //! state.
     void reset()
     {
-        m_positions.reset();
-        m_indices.reset();
-        m_counts.reset();
-        m_uvs.reset();
-        m_normals.reset();
-        m_selfBounds.reset();
-        m_childBounds.reset();
-        m_arbGeomParams.reset();
+        m_positionsProperty.reset();
+        m_indicesProperty.reset();
+        m_countsProperty.reset();
+        m_uvsParam.reset();
+        m_normalsParam.reset();
 
-        Abc::OSchema<PolyMeshSchemaInfo>::reset();
+        m_faceSets.clear();
+
+        OGeomBaseSchema<PolyMeshSchemaInfo>::reset();
     }
 
     //! Valid returns whether this function set is
     //! valid.
     bool valid() const
     {
-        return ( Abc::OSchema<PolyMeshSchemaInfo>::valid() &&
-                 m_positions.valid() &&
-                 m_indices.valid() &&
-                 m_counts.valid() );
+        return ( OGeomBaseSchema<PolyMeshSchemaInfo>::valid() &&
+                 m_positionsProperty.valid() &&
+                 m_indicesProperty.valid() &&
+                 m_countsProperty.valid() );
     }
+
+    // FaceSet stuff
+    OFaceSet & createFaceSet( const std::string &iFaceSetName );
+    //! Appends the names of any FaceSets for this PolyMesh.
+    void getFaceSetNames (std::vector <std::string> & oFaceSetNames);
+    OFaceSet getFaceSet( const std::string &iFaceSetName );
+    bool hasFaceSet( const std::string &iFaceSetName );
 
     //! unspecified-bool-type operator overload.
     //! ...
@@ -290,23 +301,28 @@ public:
 protected:
     void init( uint32_t iTsIdx );
 
-    Abc::OV3fArrayProperty m_positions;
-    Abc::OInt32ArrayProperty m_indices;
-    Abc::OInt32ArrayProperty m_counts;
+    Abc::OP3fArrayProperty m_positionsProperty;
+    Abc::OInt32ArrayProperty m_indicesProperty;
+    Abc::OInt32ArrayProperty m_countsProperty;
 
-    Abc::OBox3dProperty m_selfBounds;
-    Abc::OBox3dProperty m_childBounds;
+    // FaceSets created on this PolyMesh
+    std::map <std::string, OFaceSet>  m_faceSets;
 
-    OV2fGeomParam m_uvs;
-    ON3fGeomParam m_normals;
+    OV2fGeomParam m_uvsParam;
+    ON3fGeomParam m_normalsParam;
 
-    Abc::OCompoundProperty m_arbGeomParams;
+    // self and child bounds and ArbGeomParams and UserProperties
+    // all come from OGeomBaseSchema
 };
 
 //-*****************************************************************************
 // SCHEMA OBJECT
 //-*****************************************************************************
 typedef Abc::OSchemaObject<OPolyMeshSchema> OPolyMesh;
+
+} // End namespace ALEMBIC_VERSION_NS
+
+using namespace ALEMBIC_VERSION_NS;
 
 } // End namespace AbcGeom
 } // End namespace Alembic

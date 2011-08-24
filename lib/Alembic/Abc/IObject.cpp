@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks, Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -40,6 +40,7 @@
 
 namespace Alembic {
 namespace Abc {
+namespace ALEMBIC_VERSION_NS {
 
 //-*****************************************************************************
 // Nothing at the moment, this is just here as a debug entry point for
@@ -188,14 +189,13 @@ ICompoundProperty IObject::getProperties()
 void IObject::init( AbcA::ObjectReaderPtr iParent,
                     const std::string &iName,
                     ErrorHandler::Policy iParentPolicy,
-                    const Argument &iArg0,
-                    const Argument &iArg1 )
+                    ErrorHandler::Policy iChildPolicy )
 {
     ALEMBIC_ABC_SAFE_CALL_BEGIN( "IObject::init()" );
 
     Arguments args( iParentPolicy );
-    iArg0.setInto( args );
-    iArg1.setInto( args );
+    Argument cpcyArg( iChildPolicy );
+    cpcyArg.setInto( args );
 
     getErrorHandler().setPolicy( args.getErrorHandlerPolicy() );
 
@@ -204,5 +204,6 @@ void IObject::init( AbcA::ObjectReaderPtr iParent,
     ALEMBIC_ABC_SAFE_CALL_END();
 }
 
+} // End namespace ALEMBIC_VERSION_NS
 } // End namespace Abc
 } // End namespace Alembic

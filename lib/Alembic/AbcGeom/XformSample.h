@@ -43,6 +43,7 @@
 
 namespace Alembic {
 namespace AbcGeom {
+namespace ALEMBIC_VERSION_NS {
 
 //-*****************************************************************************
 class XformSample
@@ -52,26 +53,31 @@ public:
 
     // add translate or scale op
     // returns the index of the op in its op-stack
-    std::size_t addOp( XformOp iOp, const Abc::V3d &iVal );
+    std::size_t addOp( XformOp iTransOrScaleOp, const Abc::V3d &iVal );
 
     // add rotate op
     // returns the index of the op in its op-stack
-    std::size_t addOp( XformOp iOp, const Abc::V3d &iAxis,
+    std::size_t addOp( XformOp iRotateOp, const Abc::V3d &iAxis,
                        const double iAngleInDegrees );
 
     // add matrix op
     // returns the index of the op in its op-stack
-    std::size_t addOp( XformOp iOp, const Abc::M44d &iMatrix );
+    std::size_t addOp( XformOp iMatrixOp, const Abc::M44d &iMatrix );
+
+    // add rotateX, rotateY, or rotateZ op
+    std::size_t addOp( XformOp iSingleRotateOp,
+                       const double iSingleAxisRotationInDegrees );
 
     // add an op with values already set on the op
     std::size_t addOp( const XformOp &iOp );
 
-    XformOp getOp( std::size_t iIndex ) const;
+    XformOp getOp( const std::size_t iIndex ) const;
 
     XformOp &operator[]( const std::size_t &iIndex );
     const XformOp &operator[]( const std::size_t &iIndex ) const;
 
     std::size_t getNumOps() const;
+    //! The sum of the number of channels of all the ops in this Sample.
     std::size_t getNumOpChannels() const;
 
     //! "Inherits xforms" means, "Does this xform concatenate to or ignore the
@@ -84,12 +90,28 @@ public:
 
     // non-op-based methods; the getters will compute their return values
     // from the ops under the hood, hence return-by-value.
+
+    //! Order matters when calling different setFoo() methods;
+    //! callstack of methods must be the same for each call to
+    //! OXformSchmea::set() with a given Sample.
+    //! For example, a Sample with calls to setTranslation() and
+    //! setRotation() must make thgose same calls in the same order
+    //! between each use of OXforSchema::set().
     void setTranslation( const Abc::V3d &iTrans );
     Abc::V3d getTranslation() const;
 
-    void setRotation( const Abc::V3d &iAxis, const double iAngleInDegrees );
+    void setRotation( const Abc::V3d &iAxis, const double iAngleInDegress );
     Abc::V3d getAxis() const;
     double getAngle() const;
+
+    void setXRotation( const double iAngleInDegrees );
+    double getXRotation() const;
+
+    void setYRotation( const double iAngleInDegrees );
+    double getYRotation() const;
+
+    void setZRotation( const double iAngleInDegrees );
+    double getZRotation() const;
 
     void setScale( const Abc::V3d &iScale );
     Abc::V3d getScale() const;
@@ -97,38 +119,43 @@ public:
     void setMatrix( const Abc::M44d &iMatrix );
     Abc::M44d getMatrix() const;
 
+    //! Tests whether this sample has the same topology as iSample
+    bool isTopologyEqual( const XformSample & iSample );
+
+    //! Has this Sample been used in a call to OXformSchema::set()
+    bool getIsTopologyFrozen() const { return m_hasBeenRead; }
+
     void reset();
 
 private:
     friend class OXformSchema;
     friend class IXformSchema;
-    void setHasBeenRead();
+    void freezeTopology();
     const std::vector<Alembic::Util::uint8_t> &getOpsArray() const;
     void clear();
 
 
 private:
-    // 0 is unset; 1 is set via addOp; 2 is set via non-op-based methods
-    int m_setWithOpStack;
-
-    // This will be populated by the addOp() methods or setFoo() methods
-    // in the case of the sample being used to write data, and by the
-    // IXform in the case of the sample being used to read data.
-    std::vector<Alembic::Util::uint8_t> m_opsArray;
+    //! 0 is unset; 1 is set via addOp; 2 is set via non-op-based methods
+    int32_t m_setWithOpStack;
 
     std::vector<XformOp> m_ops;
 
     bool m_inherits;
     Abc::Box3d m_childBounds;
 
-    // This starts out false, but is set to true by the OXform and controls
-    // whether or not addOp() changes the topology of the Sample, in the form
-    // of the layout of the m_opsArray.
+    //! This starts out false, but is set to true by the OXform and controls
+    //! whether or not addOp() changes the topology of the Sample, in the form
+    //! of the layout of the m_opsArray.
     bool m_hasBeenRead;
 
     size_t m_opIndex;
 };
 
+
+} // End namespace ALEMBIC_VERSION_NS
+
+using namespace ALEMBIC_VERSION_NS;
 
 } // End namespace AbcGeom
 } // End namespace Alembic

@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks, Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -49,6 +49,7 @@
 
 namespace Alembic {
 namespace AbcGeom {
+namespace ALEMBIC_VERSION_NS {
 
 //-*****************************************************************************
 XformSample::XformSample()
@@ -77,7 +78,6 @@ std::size_t XformSample::addOp( XformOp iOp, const Abc::V3d &iVal )
         m_setWithOpStack = 1;
 
         m_ops.push_back( iOp );
-        m_opsArray.push_back( iOp.getOpEncoding() );
 
         return m_ops.size() - 1;
     }
@@ -102,42 +102,76 @@ std::size_t XformSample::addOp( XformOp iOp, const Abc::V3d &iVal )
 //-*****************************************************************************
 std::size_t XformSample::addOp( XformOp iOp, const Abc::V3d &iAxis,
                                 const double iAngleInDegrees )
+
 {
+    for ( size_t i = 0 ; i < 3 ; ++i )
     {
-        for ( size_t i = 0 ; i < 3 ; ++i )
-        {
-            iOp.setChannelValue( i, iAxis[i] );
-        }
-        iOp.setChannelValue( 3, iAngleInDegrees );
+        iOp.setChannelValue( i, iAxis[i] );
+    }
+    iOp.setChannelValue( 3, iAngleInDegrees );
 
-        if ( ! m_hasBeenRead )
-        {
-            ABCA_ASSERT( m_setWithOpStack == 0 || m_setWithOpStack == 1,
-                         "Cannot mix addOp() and set<Foo>() methods." );
+    if ( ! m_hasBeenRead )
+    {
+        ABCA_ASSERT( m_setWithOpStack == 0 || m_setWithOpStack == 1,
+                     "Cannot mix addOp() and set<Foo>() methods." );
 
-            m_setWithOpStack = 1;
+        m_setWithOpStack = 1;
 
-            m_ops.push_back( iOp );
-            m_opsArray.push_back( iOp.getOpEncoding() );
+        m_ops.push_back( iOp );
 
-            return m_ops.size() - 1;
-        }
-        else
-        {
-            std::size_t ret = m_opIndex;
+        return m_ops.size() - 1;
+    }
+    else
+    {
+        std::size_t ret = m_opIndex;
 
-            ABCA_ASSERT( iOp.getType() == m_ops[ret].getType(),
-                         "Cannot update mismatched op-type in already-setted "
-                         << "XformSample!" );
+        ABCA_ASSERT( iOp.getType() == m_ops[ret].getType(),
+                     "Cannot update mismatched op-type in already-setted "
+                     << "XformSample!" );
 
-            ABCA_ASSERT( m_setWithOpStack == 1,
-                         "Cannot mix addOp() and set<Foo>() methods." );
+        ABCA_ASSERT( m_setWithOpStack == 1,
+                     "Cannot mix addOp() and set<Foo>() methods." );
 
-            m_ops[ret] = iOp;
-            m_opIndex = ++m_opIndex % m_ops.size();
+        m_ops[ret] = iOp;
+        m_opIndex = ++m_opIndex % m_ops.size();
 
-            return ret;
-        }
+        return ret;
+    }
+}
+
+//-*****************************************************************************
+std::size_t XformSample::addOp( XformOp iOp,
+                                const double iSingleAxisRotationInDegrees )
+
+{
+    iOp.setChannelValue( 0, iSingleAxisRotationInDegrees );
+
+    if ( ! m_hasBeenRead )
+    {
+        ABCA_ASSERT( m_setWithOpStack == 0 || m_setWithOpStack == 1,
+                     "Cannot mix addOp() and set<Foo>() methods." );
+
+        m_setWithOpStack = 1;
+
+        m_ops.push_back( iOp );
+
+        return m_ops.size() - 1;
+    }
+    else
+    {
+        std::size_t ret = m_opIndex;
+
+        ABCA_ASSERT( iOp.getType() == m_ops[ret].getType(),
+                     "Cannot update mismatched op-type in already-setted "
+                     << "XformSample!" );
+
+        ABCA_ASSERT( m_setWithOpStack == 1,
+                     "Cannot mix addOp() and set<Foo>() methods." );
+
+        m_ops[ret] = iOp;
+        m_opIndex = ++m_opIndex % m_ops.size();
+
+        return ret;
     }
 }
 
@@ -160,7 +194,6 @@ std::size_t XformSample::addOp( XformOp iOp, const Abc::M44d &iVal )
         m_setWithOpStack = 1;
 
         m_ops.push_back( iOp );
-        m_opsArray.push_back( iOp.getOpEncoding() );
 
         return m_ops.size() - 1;
     }
@@ -193,7 +226,6 @@ std::size_t XformSample::addOp( const XformOp &iOp )
         m_setWithOpStack = 1;
 
         m_ops.push_back( iOp );
-        m_opsArray.push_back( iOp.getOpEncoding() );
 
         return m_ops.size() - 1;
     }
@@ -234,15 +266,9 @@ const XformOp &XformSample::operator[]( const std::size_t &iIndex ) const
 }
 
 //-*****************************************************************************
-const std::vector<Alembic::Util::uint8_t> &XformSample::getOpsArray() const
-{
-    return m_opsArray;
-}
-
-//-*****************************************************************************
 std::size_t XformSample::getNumOps() const
 {
-    return m_opsArray.size();
+    return m_ops.size();
 }
 
 //-*****************************************************************************
@@ -299,7 +325,6 @@ void XformSample::setTranslation( const Abc::V3d &iTrans )
         m_setWithOpStack = 2;
 
         m_ops.push_back( op );
-        m_opsArray.push_back( op.getOpEncoding() );
     }
     else
     {
@@ -327,7 +352,7 @@ void XformSample::setRotation( const Abc::V3d &iAxis,
     {
         op.setChannelValue( i, iAxis[i] );
     }
-    op.setChannelValue( 3, DegreesToRadians( iAngleInDegrees ) );
+    op.setChannelValue( 3, iAngleInDegrees );
 
     if ( ! m_hasBeenRead )
     {
@@ -337,7 +362,6 @@ void XformSample::setRotation( const Abc::V3d &iAxis,
         m_setWithOpStack = 2;
 
         m_ops.push_back( op );
-        m_opsArray.push_back( op.getOpEncoding() );
     }
     else
     {
@@ -373,7 +397,102 @@ void XformSample::setScale( const Abc::V3d &iScale )
         m_setWithOpStack = 2;
 
         m_ops.push_back( op );
-        m_opsArray.push_back( op.getOpEncoding() );
+    }
+    else
+    {
+        std::size_t ret = m_opIndex;
+
+        ABCA_ASSERT( m_setWithOpStack == 2,
+                     "Cannot mix addOp() and set<Foo>() methods." );
+
+        ABCA_ASSERT( op.getType() == m_ops[ret].getType(),
+                     "Cannot update mismatched op-type in already-setted "
+                     << "XformSample!" );
+
+        m_ops[ret] = op;
+        m_opIndex = ++m_opIndex % m_ops.size();
+    }
+}
+
+//-*****************************************************************************
+void XformSample::setXRotation( const double iAngleInDegrees )
+{
+    XformOp op( kRotateXOperation, kRotateHint );
+
+    op.setChannelValue( 0, iAngleInDegrees );
+
+    if ( ! m_hasBeenRead )
+    {
+        ABCA_ASSERT( m_setWithOpStack == 0 || m_setWithOpStack == 2,
+                     "Cannot mix addOp() and set<Foo>() methods." );
+
+        m_setWithOpStack = 2;
+
+        m_ops.push_back( op );
+    }
+    else
+    {
+        std::size_t ret = m_opIndex;
+
+        ABCA_ASSERT( m_setWithOpStack == 2,
+                     "Cannot mix addOp() and set<Foo>() methods." );
+
+        ABCA_ASSERT( op.getType() == m_ops[ret].getType(),
+                     "Cannot update mismatched op-type in already-setted "
+                     << "XformSample!" );
+
+        m_ops[ret] = op;
+        m_opIndex = ++m_opIndex % m_ops.size();
+    }
+}
+
+//-*****************************************************************************
+void XformSample::setYRotation( const double iAngleInDegrees )
+{
+    XformOp op( kRotateYOperation, kRotateHint );
+
+    op.setChannelValue( 0, iAngleInDegrees );
+
+    if ( ! m_hasBeenRead )
+    {
+        ABCA_ASSERT( m_setWithOpStack == 0 || m_setWithOpStack == 2,
+                     "Cannot mix addOp() and set<Foo>() methods." );
+
+        m_setWithOpStack = 2;
+
+        m_ops.push_back( op );
+    }
+    else
+    {
+        std::size_t ret = m_opIndex;
+
+        ABCA_ASSERT( m_setWithOpStack == 2,
+                     "Cannot mix addOp() and set<Foo>() methods." );
+
+        ABCA_ASSERT( op.getType() == m_ops[ret].getType(),
+                     "Cannot update mismatched op-type in already-setted "
+                     << "XformSample!" );
+
+        m_ops[ret] = op;
+        m_opIndex = ++m_opIndex % m_ops.size();
+    }
+}
+
+//-*****************************************************************************
+void XformSample::setZRotation( const double iAngleInDegrees )
+{
+    XformOp op( kRotateZOperation, kRotateHint );
+
+    op.setChannelValue( 0, iAngleInDegrees );
+
+    if ( ! m_hasBeenRead )
+    {
+        ABCA_ASSERT( m_setWithOpStack == 0 || m_setWithOpStack == 2,
+                     "Cannot mix addOp() and set<Foo>() methods." );
+
+        m_setWithOpStack = 2;
+
+        m_ops.push_back( op );
     }
     else
     {
@@ -412,7 +531,6 @@ void XformSample::setMatrix( const Abc::M44d &iMatrix )
         m_setWithOpStack = 2;
 
         m_ops.push_back( op );
-        m_opsArray.push_back( op.getOpEncoding() );
     }
     else
     {
@@ -434,6 +552,7 @@ void XformSample::setMatrix( const Abc::M44d &iMatrix )
 Abc::M44d XformSample::getMatrix() const
 {
     Abc::M44d ret;
+    ret.makeIdentity();
 
     for ( std::size_t i = 0 ; i < m_ops.size() ; ++i )
     {
@@ -454,6 +573,21 @@ Abc::M44d XformSample::getMatrix() const
                 }
             }
         }
+        else if ( otype == kRotateXOperation )
+        {
+            m.setAxisAngle( Abc::V3d( 1.0, 0.0, 0.0 ),
+                            DegreesToRadians( op.getChannelValue( 0 ) ) );
+        }
+        else if ( otype == kRotateYOperation )
+        {
+            m.setAxisAngle( Abc::V3d( 0.0, 1.0, 0.0 ),
+                            DegreesToRadians( op.getChannelValue( 0 ) ) );
+        }
+        else if ( otype == kRotateZOperation )
+        {
+            m.setAxisAngle( Abc::V3d( 0.0, 0.0, 1.0 ),
+                            DegreesToRadians( op.getChannelValue( 0 ) ) );
+        }
         else
         {
             Abc::V3d vec( op.getChannelValue( 0 ),
@@ -468,11 +602,12 @@ Abc::M44d XformSample::getMatrix() const
             {
                 m.setTranslation( vec );
             }
-            else // must be rotation
+            else if ( otype == kRotateOperation )
             {
                 m.setAxisAngle( vec,
                                 DegreesToRadians( op.getChannelValue( 3 ) ) );
             }
+
         }
         ret = m * ret;
     }
@@ -512,7 +647,34 @@ double XformSample::getAngle() const
 }
 
 //-*****************************************************************************
-void XformSample::setHasBeenRead()
+double XformSample::getXRotation() const
+{
+    Abc::V3d rot;
+    Imath::extractEulerXYZ( this->getMatrix(), rot );
+
+    return RadiansToDegrees( rot[0] );
+}
+
+//-*****************************************************************************
+double XformSample::getYRotation() const
+{
+    Abc::V3d rot;
+    Imath::extractEulerXYZ( this->getMatrix(), rot );
+
+    return RadiansToDegrees( rot[1] );
+}
+
+//-*****************************************************************************
+double XformSample::getZRotation() const
+{
+    Abc::V3d rot;
+    Imath::extractEulerXYZ( this->getMatrix(), rot );
+
+    return RadiansToDegrees( rot[2] );
+}
+
+//-*****************************************************************************
+void XformSample::freezeTopology()
 {
     m_hasBeenRead = true;
 }
@@ -532,11 +694,29 @@ void XformSample::clear()
 void XformSample::reset()
 {
     this->clear();
-    m_opsArray.clear();
-    m_opsArray.resize( 0 );
 }
 
+//-*****************************************************************************
+bool XformSample::isTopologyEqual( const XformSample & iSample )
+{
+    if (getNumOps() != iSample.getNumOps())
+    {
+        return false;
+    }
 
+    std::vector<XformOp>::const_iterator opA, opB;
+    for ( opA = m_ops.begin(), opB = iSample.m_ops.begin(); opA != m_ops.end();
+          ++opA, ++opB )
+    {
+        if ( opA->getType() != opB->getType() )
+        {
+            return false;
+        }
+    }
 
+    return true;
+}
+
+} // End namespace ALEMBIC_VERSION_NS
 } // End namespace AbcGeom
 } // End namespace Alembic

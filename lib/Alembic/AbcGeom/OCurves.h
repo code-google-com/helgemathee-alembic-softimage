@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks, Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -39,15 +39,18 @@
 
 #include <Alembic/AbcGeom/Foundation.h>
 #include <Alembic/AbcGeom/Basis.h>
+#include <Alembic/AbcGeom/CurveType.h>
 #include <Alembic/AbcGeom/SchemaInfoDeclarations.h>
 #include <Alembic/AbcGeom/OGeomParam.h>
+#include <Alembic/AbcGeom/OGeomBase.h>
 
 namespace Alembic {
 namespace AbcGeom {
+namespace ALEMBIC_VERSION_NS {
 
 //-*****************************************************************************
-// Curves definition - Similar in form to the Geometric primitive used to specify
-// curves in renderman.
+// Curves definition - Similar in form to the Geometric primitive used to
+// specify curves in renderman.
 // "type"   - linear or cubic, one type for all curves
 // "wrap"   - periodic or nonperiodic, one mode for all curves
 // ---
@@ -55,7 +58,7 @@ namespace AbcGeom {
 // "width"  - can be constant or can vary
 // "N"      - (just like PolyMesh, via a geom parameter) Normals
 // "uv"     - (just like PolyMesh, via a geom parameter) u-v coordinates
-class OCurvesSchema : public Abc::OSchema<CurvesSchemaInfo>
+class OCurvesSchema : public OGeomBaseSchema<CurvesSchemaInfo>
 {
 public:
     //-*************************************************************************
@@ -66,12 +69,29 @@ public:
     public:
         //! Creates a default sample with no data in it.
         //! ...
-        Sample() {}
+        Sample()
+        {
+            // even though this might not be written out
+            // (unless curvesNumVertices and points is set) give some reasonable
+            // and predictable defaults
+            reset();
+            m_type = kCubic;
+            m_wrap = kNonPeriodic;
+            m_basis = kBezierBasis;
+        }
 
         //! Creates a sample with position data but no index
         //! or count data. For specifying samples after the first one
-        Sample( const Abc::V3fArraySample &iPos )
-          : m_positions( iPos ) {}
+        Sample( const Abc::P3fArraySample &iPos )
+          : m_positions( iPos )
+        {
+            // even though this might not be written out
+            // (unless curvesNumVertices is set) give some reasonable
+            // and predictable defaults
+            m_type = kCubic;
+            m_wrap = kNonPeriodic;
+            m_basis = kBezierBasis;
+        }
 
 
         //! Creates a sample with position data, index data, count data,
@@ -80,48 +100,45 @@ public:
         //! sample must be full like this. Subsequent samples may also
         //! be full like this, which would indicate a change of topology
         Sample(
-                const Abc::V3fArraySample &iPos,
-                const std::string &iType = "cubic",
-                const Abc::Int32ArraySample &iNVertices = Abc::Int32ArraySample(),
-                const std::string &iWrap = "nonperiodic",
-                const Abc::V2fArraySample &iWidths = Abc::V2fArraySample(),
-                const Abc::V2fArraySample &iUVs = Abc::V2fArraySample(),
-                const Abc::V3fArraySample &iNormals = Abc::V3fArraySample(),
-		const BasisType &iUBasis = kBezierBasis,
-		const BasisType &iVBasis = kBezierBasis )
-
+                const Abc::P3fArraySample &iPos,
+                const Abc::Int32ArraySample &iNVertices,
+                const CurveType &iType = kCubic,
+                const CurvePeriodicity iWrap = kNonPeriodic,
+                const OFloatGeomParam::Sample &iWidths = \
+                OFloatGeomParam::Sample(),
+                const OV2fGeomParam::Sample &iUVs = OV2fGeomParam::Sample(),
+                const ON3fGeomParam::Sample &iNormals = ON3fGeomParam::Sample(),
+                const BasisType &iBasis = kBezierBasis )
           : m_positions( iPos ),
-            m_type( iType ),
             m_nVertices( iNVertices ),
+            m_type( iType ),
             m_wrap( iWrap ),
+            m_widths( iWidths ),
             m_uvs( iUVs ),
             m_normals( iNormals ),
-            m_widths( iWidths ),
-	    m_uBasis( iUBasis ),
-	    m_vBasis( iVBasis )
-        {}
+            m_basis( iBasis ) {}
 
         // widths accessor
-        const Abc::V2fArraySample &getWidths() const { return m_widths; }
-        void setWidths( const Abc::V2fArraySample &iWidths )
+        const OFloatGeomParam::Sample &getWidths() const { return m_widths; }
+        void setWidths( const OFloatGeomParam::Sample &iWidths )
         { m_widths = iWidths; }
 
         // positions accessor
-        const Abc::V3fArraySample &getPositions() const { return m_positions; }
-        void setPositions( const Abc::V3fArraySample &iSmp )
+        const Abc::P3fArraySample &getPositions() const { return m_positions; }
+        void setPositions( const Abc::P3fArraySample &iSmp )
         { m_positions = iSmp; }
 
         // type accessors
-        void setType( const std::string &iType )
+        void setType( const CurveType &iType )
         { m_type = iType; }
-        const std::string getType() const { return m_type; }
+        CurveType getType() const { return m_type; }
 
         // wrap accessors
-        void setWrap( const std::string &iWrap )
+        void setWrap( const CurvePeriodicity &iWrap )
         { m_wrap = iWrap; }
-        const std::string &getWrap() const { return m_wrap; }
+        CurvePeriodicity getWrap() const { return m_wrap; }
 
-        const std::size_t getNumCurves() const { return m_nVertices.size(); }
+        std::size_t getNumCurves() const { return m_nVertices.size(); }
 
         //! an array of ints that corresponds to the number
         //! of vertices per curve
@@ -130,11 +147,9 @@ public:
         const Abc::Int32ArraySample &getCurvesNumVertices() const
         { return m_nVertices; }
 
-        // getUVs getter
-        const Abc::V2fArraySample &getUVs() const { return m_uvs; }
-
-        // setUvs setter
-        void setUVs( const Abc::V2fArraySample &iUVs )
+        // UVs
+        const OV2fGeomParam::Sample &getUVs() const { return m_uvs; }
+        void setUVs( const OV2fGeomParam::Sample &iUVs )
         { m_uvs = iUVs; }
 
         // bounding box accessors
@@ -147,19 +162,14 @@ public:
         { m_childBounds = iBnds; }
 
         // normal accessors
-        const Abc::V3fArraySample &getNormals() const { return m_normals; }
-        void setNormals( const Abc::V3fArraySample &iNormals )
+        const ON3fGeomParam::Sample &getNormals() const { return m_normals; }
+        void setNormals( const ON3fGeomParam::Sample &iNormals )
         { m_normals = iNormals; }
 
-	// basis accessors
-	const BasisType &getUBasis() const { return m_uBasis; }
-        void setUBasis( const BasisType &iUBasis )
-        { m_uBasis = iUBasis; }
-
-	const BasisType &getVBasis() const { return m_vBasis; }
-        void setVBasis( const BasisType &iVBasis )
-        { m_vBasis = iVBasis; }
-
+        // basis accessors
+        BasisType getBasis() const { return m_basis; }
+        void setBasis( const BasisType &iBasis )
+        { m_basis = iBasis; }
 
         void reset()
         {
@@ -169,35 +179,34 @@ public:
             m_widths.reset();
 
             m_nVertices.reset();
-            m_type = "cubic";
-            m_wrap = "nonperiodic";
 
             m_selfBounds.makeEmpty();
             m_childBounds.makeEmpty();
 
-	    m_uBasis = kBezierBasis;
-	    m_vBasis = kBezierBasis;
+            m_type = kCubic;
+            m_wrap = kNonPeriodic;
+            m_basis = kBezierBasis;
         }
 
     protected:
 
         // properties
-        Abc::V3fArraySample m_positions;
+        Abc::P3fArraySample m_positions;
         Abc::Int32ArraySample m_nVertices;
 
-        Abc::V2fArraySample m_uvs;
-        Abc::V3fArraySample m_normals;
-        Abc::V2fArraySample m_widths;
+        CurveType m_type;
+        CurvePeriodicity m_wrap;
 
-        std::string m_type;
-        std::string m_wrap;
+        OFloatGeomParam::Sample m_widths;
+        OV2fGeomParam::Sample m_uvs;
+        ON3fGeomParam::Sample m_normals;
 
-	BasisType m_uBasis;
-	BasisType m_vBasis;
+        BasisType m_basis;
 
         // bounding box attributes
         Abc::Box3d m_selfBounds;
         Abc::Box3d m_childBounds;
+
     };
 
     //-*************************************************************************
@@ -209,6 +218,7 @@ public:
     //! By convention we always define this_type in AbcGeom classes.
     //! Used by unspecified-bool-type conversion below
     typedef OCurvesSchema this_type;
+    typedef OCurvesSchema::Sample sample_type;
 
     //-*************************************************************************
     // CONSTRUCTION, DESTRUCTION, ASSIGNMENT
@@ -226,33 +236,58 @@ public:
     //! can be used to override the ErrorHandlerPolicy, to specify
     //! MetaData, and to set TimeSamplingType.
     template <class CPROP_PTR>
-    OCurvesSchema( CPROP_PTR iParentObject,
+    OCurvesSchema( CPROP_PTR iParent,
                    const std::string &iName,
                    const Abc::Argument &iArg0 = Abc::Argument(),
                    const Abc::Argument &iArg1 = Abc::Argument(),
                    const Abc::Argument &iArg2 = Abc::Argument() )
-      : Abc::OSchema<CurvesSchemaInfo>( iParentObject, iName,
+      : OGeomBaseSchema<CurvesSchemaInfo>( iParent, iName,
                                         iArg0, iArg1, iArg2 )
     {
         // Meta data and error handling are eaten up by
         // the super type, so all that's left is time sampling.
-        init( Abc::GetTimeSamplingType( iArg0, iArg1, iArg2 ) );
+        AbcA::TimeSamplingPtr tsPtr =
+            Abc::GetTimeSampling( iArg0, iArg1, iArg2 );
+
+        AbcA::index_t tsIndex =
+            Abc::GetTimeSamplingIndex( iArg0, iArg1, iArg2 );
+
+        if ( tsPtr )
+        {
+            tsIndex = iParent->getObject()->getArchive()->
+                addTimeSampling( *tsPtr );
+        }
+
+        init( tsIndex );
     }
 
     template <class CPROP_PTR>
-    explicit OCurvesSchema( CPROP_PTR iParentObject,
+    explicit OCurvesSchema( CPROP_PTR iParent,
                             const Abc::Argument &iArg0 = Abc::Argument(),
                             const Abc::Argument &iArg1 = Abc::Argument(),
                             const Abc::Argument &iArg2 = Abc::Argument() )
-      : Abc::OSchema<CurvesSchemaInfo>( iParentObject,
+      : OGeomBaseSchema<CurvesSchemaInfo>( iParent,
                                         iArg0, iArg1, iArg2 )
     {
         // Meta data and error handling are eaten up by
         // the super type, so all that's left is time sampling.
-        init( Abc::GetTimeSamplingType( iArg0, iArg1, iArg2 ) );
+        AbcA::TimeSamplingPtr tsPtr =
+            Abc::GetTimeSampling( iArg0, iArg1, iArg2 );
+
+        AbcA::index_t tsIndex =
+            Abc::GetTimeSamplingIndex( iArg0, iArg1, iArg2 );
+
+        if ( tsPtr )
+        {
+            tsIndex = iParent->getObject()->getArchive()->
+                addTimeSampling( *tsPtr );
+        }
+
+        init( tsIndex );
     }
 
     OCurvesSchema( const OCurvesSchema& iCopy )
+        : OGeomBaseSchema<CurvesSchemaInfo>()
     {
         *this = iCopy;
     }
@@ -265,8 +300,8 @@ public:
 
     //! Return the time sampling type, which is stored on each of the
     //! sub properties.
-    AbcA::TimeSamplingType getTimeSamplingType() const
-    { return m_positions.getTimeSamplingType(); }
+    AbcA::TimeSamplingPtr getTimeSampling()
+    { return m_positionsProperty.getTimeSampling(); }
 
     //-*************************************************************************
     // SAMPLE STUFF
@@ -275,18 +310,15 @@ public:
     //! Get number of samples written so far.
     //! ...
     size_t getNumSamples()
-    { return m_positions.getNumSamples(); }
+    { return m_positionsProperty.getNumSamples(); }
 
     //! Set a sample! Sample zero has to have non-degenerate
     //! positions, indices and counts.
-    void set( const Sample &iSamp,
-              const Abc::OSampleSelector &iSS = Abc::OSampleSelector() );
+    void set( const sample_type &iSamp );
 
     //! Set from previous sample. Will apply to each of positions,
     //! indices, and counts.
-    void setFromPrevious( const Abc::OSampleSelector &iSS );
-
-    Abc::OCompoundProperty getArbGeomParams();
+    void setFromPrevious();
 
     //-*************************************************************************
     // ABC BASE MECHANISMS
@@ -298,70 +330,52 @@ public:
     //! state.
     void reset()
     {
-        //m_nVertices.reset();
-        //m_type.reset();
-        //m_wrap.reset();
+        m_positionsProperty.reset();
+        m_uvsParam.reset();
+        m_normalsParam.reset();
+        m_widthsParam.reset();
+        m_nVerticesProperty.reset();
 
-        m_positions.reset();
-        m_uvs.reset();
-        m_normals.reset();
-        m_widths.reset();
-        m_arbGeomParams.reset();
-        m_nVertices.reset();
+        m_basisAndTypeProperty.reset();
 
-        m_uBasis.reset();
-        m_vBasis.reset();
-
-
-        m_selfBounds.reset();
-        m_childBounds.reset();
-
-        Abc::OSchema<CurvesSchemaInfo>::reset();
+        OGeomBaseSchema<CurvesSchemaInfo>::reset();
     }
 
     //! Valid returns whether this function set is
     //! valid.
     bool valid() const
     {
-        return ( Abc::OSchema<CurvesSchemaInfo>::valid() &&
-                 m_positions.valid() );
+        return ( OGeomBaseSchema<CurvesSchemaInfo>::valid() &&
+                 m_positionsProperty.valid() );
     }
 
     //! unspecified-bool-type operator overload.
     //! ...
-    ALEMBIC_OVERRIDE_OPERATOR_BOOL( OCurvesSchema::valid() );
+    ALEMBIC_OVERRIDE_OPERATOR_BOOL( this_type::valid() );
 
 protected:
-    void init(  const AbcA::TimeSamplingType &iTst);
+    void init( const AbcA::index_t iTsIdx );
 
     // point data
-    Abc::OV3fArrayProperty m_positions;
-
-    // m_type represents the type of the curve, i.e. "linear" "cubic" etc.
-    Abc::OStringProperty m_type;
-    Abc::OInt32ArrayProperty m_nVertices;
-    Abc::OStringProperty m_wrap;
+    Abc::OP3fArrayProperty m_positionsProperty;
+    Abc::OInt32ArrayProperty m_nVerticesProperty;
 
     // per-point data
-    Abc::OV2fArrayProperty m_uvs;
-    Abc::OV3fArrayProperty m_normals;
-    Abc::OV2fArrayProperty m_widths;
+    OV2fGeomParam m_uvsParam;
+    ON3fGeomParam m_normalsParam;
+    OFloatGeomParam m_widthsParam;
 
-    Abc::OCompoundProperty m_arbGeomParams;
-
-    // basis properties
-    Abc::OUcharProperty m_uBasis;
-    Abc::OUcharProperty m_vBasis;
-
-    // bounding box attributes
-    Abc::OBox3dProperty m_selfBounds;
-    Abc::OBox3dProperty m_childBounds;
+    Abc::OScalarProperty m_basisAndTypeProperty;
 };
 
 //-*****************************************************************************
 // SCHEMA OBJECT
 //-*****************************************************************************
 typedef Abc::OSchemaObject<OCurvesSchema> OCurves;
+
+} // End namespace ALEMBIC_VERSION_NS
+
+using namespace ALEMBIC_VERSION_NS;
 
 } // End namespace AbcGeom
 } // End namespace Alembic

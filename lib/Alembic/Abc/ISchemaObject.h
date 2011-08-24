@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -44,6 +44,7 @@
 
 namespace Alembic {
 namespace Abc {
+namespace ALEMBIC_VERSION_NS {
 
 //-*****************************************************************************
 //! An ISchemaObject is an object with a single schema. This is just
@@ -175,6 +176,15 @@ protected:
 // TEMPLATE AND INLINE FUNCTIONS
 //-*****************************************************************************
 
+inline ErrorHandler::Policy GetErrorHandlerPolicy( const Argument &iArg0,
+                                                   const Argument &iArg1 )
+{
+    Arguments args;
+    iArg0.setInto( args );
+    iArg1.setInto( args );
+    return args.getErrorHandlerPolicy();
+}
+
 //-*****************************************************************************
 template <class SCHEMA>
 template <class OBJECT_PTR>
@@ -184,7 +194,7 @@ ISchemaObject<SCHEMA>::ISchemaObject
     const std::string &iName,
     const Argument &iArg0,
     const Argument &iArg1 )
-  : IObject( iParentObject, iName, iArg0, iArg1 )
+  : IObject( iParentObject, iName, GetErrorHandlerPolicy( iArg0, iArg1 ) )
 {
     Arguments args;
     iArg0.setInto( args );
@@ -244,6 +254,10 @@ inline ISchemaObject<SCHEMA>::ISchemaObject(
     ALEMBIC_ABC_SAFE_CALL_END_RESET();
 }
 
+
+} // End namespace ALEMBIC_VERSION_NS
+
+using namespace ALEMBIC_VERSION_NS;
 
 } // End namespace Abc
 } // End namespace Alembic
