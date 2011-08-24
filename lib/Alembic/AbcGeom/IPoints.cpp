@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -38,12 +38,13 @@
 
 namespace Alembic {
 namespace AbcGeom {
+namespace ALEMBIC_VERSION_NS {
 
 //-*****************************************************************************
 void IPointsSchema::init( const Abc::Argument &iArg0,
                           const Abc::Argument &iArg1 )
 {
-    ALEMBIC_ABC_SAFE_CALL_BEGIN( "IPointsTrait::init()" );
+    ALEMBIC_ABC_SAFE_CALL_BEGIN( "IPointsSchema::init()" );
 
     Abc::Arguments args;
     iArg0.setInto( args );
@@ -51,27 +52,26 @@ void IPointsSchema::init( const Abc::Argument &iArg0,
 
     AbcA::CompoundPropertyReaderPtr _this = this->getPtr();
 
-    m_positions = Abc::IV3fArrayProperty( _this, "P",
-                                          args.getSchemaInterpMatching() );
-    m_ids = Abc::IUInt64ArrayProperty( _this, ".pointIds",
+    // no matching so we pick up old assets written as V3f
+    m_positionsProperty = Abc::IP3fArrayProperty( _this, "P", kNoMatching );
+
+    m_idsProperty = Abc::IUInt64ArrayProperty( _this, ".pointIds",
                                       args.getSchemaInterpMatching() );
 
-    m_selfBounds = Abc::IBox3dProperty( _this, ".selfBnds", iArg0, iArg1 );
-
-    if ( this->getPropertyHeader(".childBnds") != NULL )
+    if ( _this->getPropertyHeader( ".velocities" ) != NULL )
     {
-        m_childBounds = Abc::IBox3dProperty( _this, ".childBnds", iArg0, iArg1);
+        m_velocitiesProperty = Abc::IV3fArrayProperty( _this, ".velocities",
+                                               iArg0, iArg1 );
     }
 
-    if ( this->getPropertyHeader( ".arbGeomParams" ) != NULL )
+    if ( _this->getPropertyHeader( ".widths" ) != NULL )
     {
-        m_arbGeomParams = Abc::ICompoundProperty( _this, ".arbGeomParams",
-                                                  args.getErrorHandlerPolicy()
-                                                );
+        m_widthsParam = IFloatGeomParam( _this, ".widths", iArg0, iArg1 );
     }
 
     ALEMBIC_ABC_SAFE_CALL_END_RESET();
 }
 
+} // End namespace ALEMBIC_VERSION_NS
 } // End namespace AbcGeom
 } // End namespace Alembic

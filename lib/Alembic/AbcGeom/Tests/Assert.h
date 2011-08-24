@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -48,6 +48,20 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+
+#include <ImathMath.h>
+
+#include <limits>
+
+//-*****************************************************************************
+static const double VAL_EPSILON =
+    std::numeric_limits<double>::epsilon() * 1024.0;
+
+bool almostEqual( const double &a, const double &b,
+                  const double &epsilon = VAL_EPSILON )
+{
+    return Imath::equalWithAbsError( a, b, epsilon );
+}
 
 //-*****************************************************************************
 #define TESTING_ASSERT( TEST )                                          \

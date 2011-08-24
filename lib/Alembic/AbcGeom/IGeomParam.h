@@ -44,6 +44,7 @@
 
 namespace Alembic {
 namespace AbcGeom {
+namespace ALEMBIC_VERSION_NS {
 
 //-*****************************************************************************
 template <class TRAITS>
@@ -180,11 +181,12 @@ public:
 
     const AbcA::MetaData &getMetaData();
 
+    bool isConstant();
 
     void reset()
     {
         m_valProp.reset();
-        m_indices.reset();
+        m_indicesProperty.reset();
         m_cprop.reset();
         m_isIndexed = false;
     }
@@ -192,14 +194,14 @@ public:
     bool valid() const
     {
         return ( m_valProp.valid()
-                 && ( ( ! m_cprop ) || m_indices ) );
+                 && ( ( ! m_cprop ) || m_indicesProperty ) );
     }
 
     ALEMBIC_OPERATOR_BOOL( this_type::valid() );
 
     prop_type getValueProperty() { return m_valProp; }
 
-    Abc::IUInt32ArrayProperty getIndexProperty() { return m_indices; }
+    Abc::IUInt32ArrayProperty getIndexProperty() { return m_indicesProperty; }
 
 private:
     Abc::ErrorHandler &getErrorHandler() const
@@ -209,7 +211,7 @@ protected:
     prop_type m_valProp;
 
     // if the GeomParam is not indexed, these will not exist.
-    Abc::IUInt32ArrayProperty m_indices;
+    Abc::IUInt32ArrayProperty m_indicesProperty;
     Abc::ICompoundProperty m_cprop;
 
     bool m_isIndexed;
@@ -249,7 +251,8 @@ ITypedGeomParam<TRAITS>::ITypedGeomParam( CPROP iParent,
         // we're indexed
         m_cprop = ICompoundProperty( iParent, iName,
                                      args.getErrorHandlerPolicy() );
-        m_indices = IUInt32ArrayProperty( m_cprop, ".indices", iArg0, iArg1 );
+        m_indicesProperty = IUInt32ArrayProperty( m_cprop, ".indices", iArg0,
+                                                  iArg1 );
         m_valProp = ITypedArrayProperty<TRAITS>( m_cprop, ".vals", iArg0,
                                                  iArg1 );
         m_isIndexed = true;
@@ -299,7 +302,8 @@ ITypedGeomParam<TRAITS>::ITypedGeomParam( PROP iThis,
     {
         // we're indexed
         m_cprop = ICompoundProperty( iThis, iWrapFlag, iArg0, iArg1 );
-        m_indices = IUInt32ArrayProperty( m_cprop, ".indices", iArg0, iArg1 );
+        m_indicesProperty = IUInt32ArrayProperty( m_cprop, ".indices", iArg0,
+                                                  iArg1 );
         m_valProp = ITypedArrayProperty<TRAITS>( m_cprop, ".vals", iArg0,
                                                  iArg1 );
         m_isIndexed = true;
@@ -322,10 +326,10 @@ ITypedGeomParam<TRAITS>::getIndexed( typename ITypedGeomParam<TRAITS>::Sample &o
                                      const Abc::ISampleSelector &iSS )
 {
     m_valProp.get( oSamp.m_vals, iSS );
-    if ( m_indices ) { m_indices.get( oSamp.m_indices, iSS ); }
+    if ( m_indicesProperty ) { m_indicesProperty.get( oSamp.m_indices, iSS ); }
     else
     {
-        uint32_t size = oSamp.m_vals->size();
+        uint32_t size = static_cast< uint32_t > ( oSamp.m_vals->size() );
 
         uint32_t *v = new uint32_t[size];
 
@@ -356,7 +360,7 @@ ITypedGeomParam<TRAITS>::getExpanded( typename ITypedGeomParam<TRAITS>::Sample &
     oSamp.m_scope = this->getScope();
     oSamp.m_isIndexed = m_isIndexed;
 
-    if ( ! m_indices )
+    if ( ! m_indicesProperty )
     {
         m_valProp.get( oSamp.m_vals, iSS );
     }
@@ -364,7 +368,7 @@ ITypedGeomParam<TRAITS>::getExpanded( typename ITypedGeomParam<TRAITS>::Sample &
     {
         boost::shared_ptr< Abc::TypedArraySample<TRAITS> > valPtr = \
             m_valProp.getValue( iSS );
-        Abc::UInt32ArraySamplePtr idxPtr = m_indices.getValue( iSS );
+        Abc::UInt32ArraySamplePtr idxPtr = m_indicesProperty.getValue( iSS );
 
         size_t size = idxPtr->size();
 
@@ -398,7 +402,7 @@ size_t ITypedGeomParam<TRAITS>::getNumSamples()
 
     if ( m_isIndexed )
     {
-        return std::max( m_indices.getNumSamples(),
+        return std::max( m_indicesProperty.getNumSamples(),
                          m_valProp.getNumSamples() );
     }
     else
@@ -410,6 +414,26 @@ size_t ITypedGeomParam<TRAITS>::getNumSamples()
     ALEMBIC_ABC_SAFE_CALL_END();
 
     return 0;
+}
+
+//-*****************************************************************************
+template <class TRAITS>
+bool ITypedGeomParam<TRAITS>::isConstant()
+{
+    ALEMBIC_ABC_SAFE_CALL_BEGIN( "ITypedGeomParam::isConstant()" );
+
+    if ( m_isIndexed )
+    {
+        return m_valProp.isConstant() && m_indicesProperty.isConstant();
+    }
+    else
+    {
+        return m_valProp.isConstant();
+    }
+
+    ALEMBIC_ABC_SAFE_CALL_END();
+
+    return false;
 }
 
 //-*****************************************************************************
@@ -459,9 +483,9 @@ AbcA::TimeSamplingPtr ITypedGeomParam<TRAITS>::getTimeSampling()
     {
         return m_valProp.getTimeSampling();
     }
-    else if ( m_indices )
+    else if ( m_indicesProperty )
     {
-        return m_indices.getTimeSampling();
+        return m_indicesProperty.getTimeSampling();
     }
 
     return AbcA::TimeSamplingPtr();
@@ -538,7 +562,11 @@ typedef ITypedGeomParam<N2dTPTraits>             IN2dGeomParam;
 typedef ITypedGeomParam<N3fTPTraits>             IN3fGeomParam;
 typedef ITypedGeomParam<N3dTPTraits>             IN3dGeomParam;
 
-} // namespace AbcGeom
-} // namespace Alembic
+} // End namespace ALEMBIC_VERSION_NS
+
+using namespace ALEMBIC_VERSION_NS;
+
+} // End namespace AbcGeom
+} // End namespace Alembic
 
 #endif

@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks, Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -134,8 +134,16 @@ void Example1_MeshOut()
         Int32ArraySample( g_counts, g_numCounts ),
         uvsamp, nsamp );
 
-    // Set the sample.
+    // not actually the right data; just making it up
+    Box3d cbox;
+    cbox.extendBy( V3d( 1.0, -1.0, 0.0 ) );
+    cbox.extendBy( V3d( -1.0, 1.0, 3.0 ) );
+    mesh_samp.setChildBounds( cbox );
+
+    // Set the sample twice
     mesh.set( mesh_samp );
+    mesh.set( mesh_samp );
+
 
     // Alembic objects close themselves automatically when they go out
     // of scope. So - we don't have to do anything to finish
@@ -149,10 +157,13 @@ void Example1_MeshIn()
     IArchive archive( Alembic::AbcCoreHDF5::ReadArchive(), "polyMesh1.abc" );
     std::cout << "Reading: " << archive.getName() << std::endl;
 
+    IGeomBaseObject geomBase( IObject( archive, kTop ), "meshy" );
+    TESTING_ASSERT( geomBase.getSchema().getSelfBoundsProperty().valid() );
+
     IPolyMesh meshyObj( IObject( archive, kTop ), "meshy" );
     IPolyMeshSchema &mesh = meshyObj.getSchema();
-    IN3fGeomParam N = mesh.getNormals();
-    IV2fGeomParam uv = mesh.getUVs();
+    IN3fGeomParam N = mesh.getNormalsParam();
+    IV2fGeomParam uv = mesh.getUVsParam();
 
     TESTING_ASSERT( ! N.isIndexed() );
 
@@ -160,10 +171,16 @@ void Example1_MeshIn()
 
     IPolyMeshSchema::Sample mesh_samp;
     mesh.get( mesh_samp );
+    IGeomBase::Sample baseSamp;
+    geomBase.getSchema().get( baseSamp );
 
     TESTING_ASSERT( mesh_samp.getSelfBounds().min == V3d( -1.0, -1.0, -1.0 ) );
 
     TESTING_ASSERT( mesh_samp.getSelfBounds().max == V3d( 1.0, 1.0, 1.0 ) );
+
+    TESTING_ASSERT( baseSamp.getSelfBounds().min == V3d( -1.0, -1.0, -1.0 ) );
+
+    TESTING_ASSERT( baseSamp.getSelfBounds().max == V3d( 1.0, 1.0, 1.0 ) );
 
     ICompoundProperty arbattrs = mesh.getArbGeomParams();
 
@@ -173,6 +190,11 @@ void Example1_MeshIn()
     // getExpandedValue() takes an optional ISampleSelector;
     // getVals() returns a TypedArraySamplePtr
     N3fArraySamplePtr nsp = N.getExpandedValue().getVals();
+
+    TESTING_ASSERT( N.isConstant() );
+    TESTING_ASSERT( uv.isConstant() );
+
+    TESTING_ASSERT( IsGeomParam( N.getMetaData() ) );
 
     N3f n0 = (*nsp)[0];
 
@@ -201,88 +223,42 @@ void Example1_MeshIn()
               << mesh_samp.getPositions()->get()[0] << std::endl;
 }
 
-#if 0
-
 //-*****************************************************************************
-void Time_Sampled_Mesh_Test0_Writer()
+void meshUnderXformOut( const std::string &iName )
 {
-    using namespace Ago;
+    OArchive archive( Alembic::AbcCoreHDF5::WriteArchive(), iName );
 
-    OArchive archive( "time_samples_mesh0.abc" );
-    std::cout << "Writing: " << archive.getName() << std::endl;
+    TimeSamplingPtr ts( new TimeSampling( 1.0 / 24.0, 0.0 ) );
 
-    OPolyMesh mesh( archive, "meshy" );
-    OSampleSelector oSS;
-    for (int iSample=0; iSample<10; iSample++)
+    OXform xfobj( archive.getTop(), "xf", ts );
+
+    OPolyMesh meshobj( xfobj, "mesh", ts );
+
+    OPolyMeshSchema::Sample mesh_samp(
+        V3fArraySample( ( const V3f * )g_verts, g_numVerts ),
+        Int32ArraySample( g_indices, g_numIndices ),
+        Int32ArraySample( g_counts, g_numCounts ) );
+
+    XformSample xf_samp;
+    XformOp rotOp( kRotateYOperation );
+
+    Box3d childBounds;
+    childBounds.makeEmpty();
+    childBounds.extendBy( V3d( 1.0, 1.0, 1.0 ) );
+    childBounds.extendBy( V3d( -1.0, -1.0, -1.0 ) );
+
+    xf_samp.setChildBounds( childBounds );
+
+    double rotation = 0.0;
+
+    for ( std::size_t i = 0 ; i < 100 ; ++i )
     {
-        OPolyMeshTrait::Sample mesh_samp(
-
-            V3fArraySample( ( const V3f * )g_verts, g_numVerts ),
-            Int32ArraySample( g_indices, g_numIndices ),
-            Int32ArraySample( g_starts, g_numStarts ),
-            V3fArraySample( ( const V3f * )g_normals, g_numNormals ),
-            V2fArraySample( ( const V2f * )g_uvs, g_numUVs )
-
-            );
-        mesh.set( mesh_samp, OSampleSelector( iSample) );
-        std::cout << "  ..wrote sample " << iSample << std::endl;
+        xf_samp.addOp( rotOp, rotation );
+        xfobj.getSchema().set( xf_samp );
+        meshobj.getSchema().set( mesh_samp );
+        rotation += 30.0;
     }
-
-    OPolyMeshTrait::Sample mesh_samp;
-    mesh.set( mesh_samp );
 }
-
-void Time_Sampled_Mesh_Test0_Reader()
-{
-    using namespace Ago;
-
-    IArchive archive( "time_samples_mesh0.abc" );
-    std::cout << "Reading: " << archive.getName() << std::endl;
-
-
-    IPolyMesh mesh( archive, "meshy" );
-
-    std::cout << "mesh has " << mesh->getNumChildren() << " children"
-              << std::endl;
-
-    // Find out information about the positions
-    ICompoundProperty comp( mesh, ".geom" );
-    IV3fArrayProperty posPtr( comp, "P" );
-    std::cout << "mesh positions has " << posPtr->getNumSamples() << " samples"
-              << std::endl;
-
-    for (int ii=0; ii<posPtr->getNumSamples(); ii++)
-    {
-        std::cout << " sample: " << ii << "  v[0] = ";
-        V3fArraySamplePtr posSamp;
-        posPtr.get( posSamp, (size_t) ii );
-        std::cout << (*posSamp)[0] << std::endl;
-        // is the same as:
-        //   std::cout << posSamp->get()[0] << std::endl;
-    }
-
-
-
-
-    IPolyMeshTrait::Sample mesh_samp;
-    mesh.get( mesh_samp );
-
-    std::cout << "Mesh num vertices: "
-              << mesh_samp.getPositions()->size() << std::endl;
-
-    //std::cout << "Mesh num vertex samples: "
-    //          << mesh_samp.getPositions()->getNumSamples() << std::endl;
-
-
-}
-
-void Time_Sampled_Mesh_Test0()
-{
-    Time_Sampled_Mesh_Test0_Writer();
-    Time_Sampled_Mesh_Test0_Reader();
-}
-
-#endif
 
 //-*****************************************************************************
 //-*****************************************************************************
@@ -299,6 +275,8 @@ int main( int argc, char *argv[] )
     // Mesh out
     Example1_MeshOut();
     Example1_MeshIn();
+
+    meshUnderXformOut( "animatedXformedMesh.abc" );
 
     //Time_Sampled_Mesh_Test0();
     return 0;

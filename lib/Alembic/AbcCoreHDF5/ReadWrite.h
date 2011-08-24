@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -38,7 +38,6 @@
 #define _Alembic_AbcCoreHDF5_ReadWrite_h_
 
 #include <Alembic/AbcCoreAbstract/All.h>
-#include <Alembic/AbcCoreHDF5/Foundation.h>
 
 namespace Alembic {
 namespace AbcCoreHDF5 {

@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks, Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -123,21 +123,6 @@ void Example1_MeshOut()
     color_val.z = 1.0;
     color.set( color_samp );
 
-    C3f color_val( 1.0, 0.0, 0.0 );
-
-    OCompoundProperty arbParams = mesh.getArbGeomParams();
-    C3fArraySample val_samp( &color_val, 1 );
-
-    OC3fGeomParam color( arbParams, "color", false, kConstantScope, 1 );
-    OC3fGeomParam::Sample color_samp( val_samp, kConstantScope );
-
-    // write red
-    color.set( color_samp, OSampleSelector(0, 0.0) );
-
-    // now purple
-    color_val.z = 1.0;
-    color.set( color_samp, OSampleSelector(1, 1.0) );
-
     std::cout << "Writing: " << archive.getName() << std::endl;
 }
 
@@ -147,13 +132,17 @@ void Example1_MeshIn()
     IArchive archive( Alembic::AbcCoreHDF5::ReadArchive(), "subD1.abc" );
     std::cout << "Reading: " << archive.getName() << std::endl;
 
+
+    IGeomBaseObject geomBase( IObject( archive, kTop ), "subd" );
+    TESTING_ASSERT( geomBase.getSchema().getSelfBoundsProperty().valid() );
+
     ISubD meshyObj( IObject( archive, kTop ), "subd" );
     ISubDSchema &mesh = meshyObj.getSchema();
 
     TESTING_ASSERT( 3 == mesh.getNumSamples() );
 
     // UVs
-    IV2fGeomParam uv = mesh.getUVs();
+    IV2fGeomParam uv = mesh.getUVsParam();
     TESTING_ASSERT( ! uv.isIndexed() );
 
     // we can fake like the UVs are indexed
@@ -166,6 +155,7 @@ void Example1_MeshIn()
 
     // get the 1th sample by value
     ISubDSchema::Sample samp1 = mesh.getValue( 1 );
+    IGeomBase::Sample baseSamp = geomBase.getSchema().getValue( 1 );
 
     std::cout << "bounds: " << samp1.getSelfBounds().min << ", "
               << samp1.getSelfBounds().max << std::endl;
@@ -173,6 +163,10 @@ void Example1_MeshIn()
     TESTING_ASSERT( samp1.getSelfBounds().min == V3d( -1.0, -1.0, -1.0 ) );
 
     TESTING_ASSERT( samp1.getSelfBounds().max == V3d( 1.0, 1.0, 1.0 ) );
+
+    TESTING_ASSERT( baseSamp.getSelfBounds().min == V3d( -1.0, -1.0, -1.0 ) );
+
+    TESTING_ASSERT( baseSamp.getSelfBounds().max == V3d( 1.0, 1.0, 1.0 ) );
 
     for ( size_t i = 0 ; i < samp1.getCreaseSharpnesses()->size() ; ++i )
     {

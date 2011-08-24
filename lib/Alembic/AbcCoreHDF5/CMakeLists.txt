@@ -1,7 +1,8 @@
 ##-*****************************************************************************
 ##
-## Copyright (c) 2009-2010, Industrial Light & Magic,
-##   a division of Lucasfilm Entertainment Company Ltd.
+## Copyright (c) 2009-2011,
+##  Sony Pictures Imageworks Inc. and
+##  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 ##
 ## All rights reserved.
 ##
@@ -33,7 +34,7 @@
 ##-*****************************************************************************
 
 # C++ files for this project
-SET( CXX_FILES 
+SET( CXX_FILES
   AprImpl.cpp
   ApwImpl.cpp
   ArImpl.cpp
@@ -60,10 +61,10 @@ SET( CXX_FILES
   TopCpwImpl.cpp
   TopOrImpl.cpp
   TopOwImpl.cpp
-  WriteUtil.cpp 
+  WriteUtil.cpp
 )
 
-SET( H_FILES 
+SET( H_FILES
   All.h
   AprImpl.h
   ApwImpl.h
@@ -107,9 +108,9 @@ INSTALL( TARGETS AlembicAbcCoreHDF5
          ARCHIVE DESTINATION lib/static )
 
 # Only install AbcCoreHDF5.h and ReadArraySampleCache
-INSTALL( FILES 
-  All.h 
-  ReadWrite.h
+INSTALL( FILES
+         All.h
+         ReadWrite.h
          DESTINATION include/Alembic/AbcCoreHDF5
          PERMISSIONS OWNER_READ GROUP_READ WORLD_READ )
 

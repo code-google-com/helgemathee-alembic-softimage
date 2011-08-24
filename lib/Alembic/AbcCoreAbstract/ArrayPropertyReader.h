@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks, Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -109,6 +109,11 @@ public:
 
     //! Expose the key for apps that use their own custom cache management.
     virtual bool getKey( index_t iSampleIndex, ArraySampleKey & oKey ) = 0;
+
+    //! The ArraySample may have incorrect dimensions, (even though the packed
+    //! data will be correct) expose the correct dimensions here for those
+    //! clients that need it.
+    virtual void getDimensions( index_t iSampleIndex, Dimensions & oDim ) = 0;
 
     //! A hint about whether this property has 1 and only 1 DataType
     //! for each of it's samples.  Array Properties with no samples written to

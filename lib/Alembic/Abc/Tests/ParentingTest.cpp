@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks, Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -45,6 +45,11 @@
 
 namespace Abc = Alembic::Abc;
 using namespace Abc;
+
+using Alembic::AbcCoreAbstract::chrono_t;
+using Alembic::AbcCoreAbstract::index_t;
+using Alembic::Util::uint32_t;
+using Alembic::Util::float32_t;
 
 static const V3f scalarV3fval( -1.0f, 32.0f, -90.0f );
 
@@ -162,8 +167,6 @@ void simpleTestIn( const std::string &iArchiveName )
         size_t numPoints = acc0V3fap0SampPtr->size();
 
         chrono_t time = acc0V3fap0.getTimeSampling()->getSampleTime( i );
-
-        chrono_t compTime = startTime + ( i * dt );
 
         chrono_t compTime = startTime + ( i * dt );
 

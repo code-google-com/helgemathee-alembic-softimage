@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -43,6 +43,7 @@
 
 namespace Alembic {
 namespace Abc {
+namespace ALEMBIC_VERSION_NS {
 
 //-*****************************************************************************
 //! An OSchemaObject is an object with a single schema. This is just
@@ -203,6 +204,10 @@ OSchemaObject<SCHEMA>::OSchemaObject
     AbcA::MetaData metaData = args.getMetaData();
     metaData.set( "schema", SCHEMA::getSchemaTitle() );
     metaData.set( "schemaObjTitle", getSchemaObjTitle() );
+    if (SCHEMA::getSchemaBaseType() != "" )
+    {
+        metaData.set( "schemaBaseType", SCHEMA::getSchemaBaseType() );
+    }
 
     // Make the object.
     AbcA::ObjectHeader ohdr( iName, metaData );
@@ -239,15 +244,19 @@ inline OSchemaObject<SCHEMA>::OSchemaObject(
              iFlag,
              GetErrorHandlerPolicy( iObject,
                                     iArg0, iArg1, iArg2 ) )
-  , m_schema( this->getProperties(),
-              iFlag,
-              this->getErrorHandlerPolicy(),
-              GetSchemaInterpMatching( iArg0, iArg1, iArg2 ) )
 {
     ALEMBIC_ABC_SAFE_CALL_BEGIN(
         "OSchemaObject::OSchemaObject( wrap )" );
 
     const AbcA::ObjectHeader &oheader = this->getHeader();
+
+    m_schema = SCHEMA(
+        this->getProperties().getProperty(
+            SCHEMA::getDefaultSchemaName() ).getPtr()->asCompoundPtr(),
+        iFlag,
+        this->getErrorHandlerPolicy(),
+        GetSchemaInterpMatching( iArg0, iArg1, iArg2 ) );
+
 
     ABCA_ASSERT( matches( oheader,
                           GetSchemaInterpMatching( iArg0, iArg1, iArg2 ) ),
@@ -259,6 +268,10 @@ inline OSchemaObject<SCHEMA>::OSchemaObject(
 
     ALEMBIC_ABC_SAFE_CALL_END_RESET();
 }
+
+} // End namespace ALEMBIC_VERSION_NS
+
+using namespace ALEMBIC_VERSION_NS;
 
 } // End namespace Abc
 } // End namespace Alembic

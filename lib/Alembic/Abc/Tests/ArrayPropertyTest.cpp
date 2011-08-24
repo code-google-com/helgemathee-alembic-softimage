@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks, Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -42,6 +42,10 @@
 namespace Abc = Alembic::Abc;
 using namespace Abc;
 
+using Alembic::AbcCoreAbstract::chrono_t;
+using Alembic::AbcCoreAbstract::index_t;
+using Alembic::Util::uint32_t;
+
 //
 // The tests in this file are intended to exercize the Abc API;
 //  specifically writing and reading of uniformly samples properties
@@ -57,7 +61,6 @@ Imath::V3f g_vectors[5] = { Imath::V3f(1,1,1),
 
 void writeUInt32ArrayProperty(const std::string &archiveName)
 {
-    const unsigned int numSamples = 5;
     const chrono_t dt = 1.0 / 24.0;
     const chrono_t startTime = 123.0;
 
@@ -74,7 +77,7 @@ void writeUInt32ArrayProperty(const std::string &archiveName)
 
     // Create a scalar property on this child object named 'primes'
     OUInt32ArrayProperty primes( childProps,  // owner
-                               "primes"); // uniform with cycle=dt
+                                 "primes"); // uniform with cycle=dt
 
     std::vector<uint32_t> vals;
     for (int ss=0; ss<5; ss++)
@@ -145,7 +148,7 @@ void readUInt32ArrayProperty(const std::string &archiveName)
 
     const TimeSamplingPtr ts = primes.getTimeSampling();
     std::cout << "..with time/value pairs: " << std::endl;;
-    for (int ss=0; ss<numSamples; ss++)
+    for (unsigned int ss=0; ss<numSamples; ss++)
     {
         std::cout << "   ";
         ISampleSelector iss( (index_t) ss);
@@ -281,7 +284,7 @@ void readV3fArrayProperty(const std::string &archiveName)
 
     TimeSamplingPtr ts = positions.getTimeSampling();
     std::cout << "..with time/value pairs: " << std::endl;;
-    for (int ss=0; ss<numSamples; ss++)
+    for (unsigned int ss=0; ss<numSamples; ss++)
     {
         std::cout << "   ";
         ISampleSelector iss( (index_t) ss);
@@ -321,7 +324,7 @@ void readWriteColorArrayProperty(const std::string &archiveName)
     {
 
         OArchive archive( Alembic::AbcCoreHDF5::WriteArchive(), archiveName,
-            ErrorHandler::kThrowPolicy );
+                          ErrorHandler::kThrowPolicy );
         OObject archiveTop = archive.getTop();
 
         OObject child( archiveTop, "test" );
@@ -354,11 +357,8 @@ void readWriteColorArrayProperty(const std::string &archiveName)
     {
         // now read it
         IArchive archive( Alembic::AbcCoreHDF5::ReadArchive(),
-                      archiveName, ErrorHandler::kThrowPolicy );
+                          archiveName, ErrorHandler::kThrowPolicy );
         IObject archiveTop = archive.getTop();
-
-        const unsigned int numChildren =  archiveTop.getNumChildren();
-
 
         IObject child( archiveTop, archiveTop.getChildHeader(0).getName() );
         ICompoundProperty props = child.getProperties();
@@ -368,23 +368,38 @@ void readWriteColorArrayProperty(const std::string &archiveName)
         shades.get( samplePtr );
 
         ABCA_ASSERT( samplePtr->getDimensions().rank() == 2,
-            "Incorrect rank on the sample." );
+                     "Incorrect rank on the sample." );
 
         ABCA_ASSERT( samplePtr->getDimensions().numPoints() == 8,
-            "Incorrect number of total points." );
+                     "Incorrect number of total points." );
 
         ABCA_ASSERT( samplePtr->getDimensions()[0] == 2,
-            "Incorrect size on dimension 0." );
+                     "Incorrect size on dimension 0." );
 
         ABCA_ASSERT( samplePtr->getDimensions()[1] == 4,
-            "Incorrect size on dimension 1." );
+                     "Incorrect size on dimension 1." );
+
+        Alembic::Util::Dimensions dims;
+        shades.getDimensions( dims );
+
+        ABCA_ASSERT( dims.rank() == 2,
+                     "Incorrect rank on the sample." );
+
+        ABCA_ASSERT( dims.numPoints() == 8,
+                     "Incorrect number of total points." );
+
+        ABCA_ASSERT( dims[0] == 2,
+                     "Incorrect size on dimension 0." );
+
+        ABCA_ASSERT( dims[1] == 4,
+                     "Incorrect size on dimension 1." );
 
         for (size_t i = 0; i < 8; ++i)
         {
             ABCA_ASSERT( (*samplePtr)[i].x == i/8.0 &&
-                (*samplePtr)[i].x == (*samplePtr)[i].y &&
-                (*samplePtr)[i].x == (*samplePtr)[i].z, 
-                "Color [" << i << "] is incorrect.");
+                         (*samplePtr)[i].x == (*samplePtr)[i].y &&
+                         (*samplePtr)[i].x == (*samplePtr)[i].z,
+                         "Color [" << i << "] is incorrect.");
         }
 
     }

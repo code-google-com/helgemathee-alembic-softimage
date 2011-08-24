@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks, Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -42,6 +42,11 @@
 namespace Abc = Alembic::Abc;
 using namespace Abc;
 
+using Alembic::AbcCoreAbstract::chrono_t;
+using Alembic::AbcCoreAbstract::index_t;
+using Alembic::Util::uint32_t;
+
+
 //
 // The tests in this file are intended to demonstrate Alembic Issue 16
 //  "memcpy error in Alembic::HDF5::Attribute::writeAll" revealed
@@ -50,13 +55,13 @@ using namespace Abc;
 
 void writeSimpleProperties(const std::string &archiveName)
 {
-    const unsigned int numSamples = 5;
+    const uint32_t numSamples = 5;
     const chrono_t dt = 1.0 / 24.0;
 
     TimeSamplingType tst( dt ); // uniform with cycle=dt
     std::vector < chrono_t > timeSamp(1, 666.0);
     TimeSampling ts(tst, timeSamp);
-    
+
     // Create an archive for writing. Indicate that we want Alembic to
     //   throw exceptions on errors.
     OArchive archive( Alembic::AbcCoreHDF5::WriteArchive(),
@@ -76,7 +81,7 @@ void writeSimpleProperties(const std::string &archiveName)
                           tsidx );
 
     // Write out the samples
-    for (int tt=0; tt<numSamples; tt++)
+    for (uint32_t tt=0; tt<numSamples; tt++)
     {
         double mm = (1.0 + 0.1*tt); // vary the mass
         // either one works. Is one the 'correct' method?
@@ -124,10 +129,10 @@ void readSimpleProperties(const std::string &archiveName)
               << std::endl;
 
     std::vector<std::string> propNames;
-    for (int pp=0; pp<numProperties; pp++)
+    for (unsigned int pp=0; pp<numProperties; pp++)
         propNames.push_back( props.getPropertyHeader(pp).getName() );
 
-    for (int jj=0; jj<numProperties; jj++)
+    for (unsigned int jj=0; jj<numProperties; jj++)
     {
         std::cout << "    ..named " << propNames[jj] << std::endl;
 
@@ -211,11 +216,8 @@ void readSimpleProperties(const std::string &archiveName)
             GetCompoundPropertyReaderPtr(props)->
             getScalarProperty( propNames[jj] )->getTimeSampling();
 
-        bool hasSampleTimes = GetCompoundPropertyReaderPtr( props )->
-            getScalarProperty( propNames[jj] )->getNumSamples() > 1;
-
-        size_t numSamples = ts->getNumSamples();
-
+        size_t numSamples = GetCompoundPropertyReaderPtr( props )->
+            getScalarProperty( propNames[jj] )->getNumSamples();
 
         std::cout << "    ..with time sampling: ";
         std::cout << "  " << numSamples << " samples";
@@ -223,7 +225,7 @@ void readSimpleProperties(const std::string &archiveName)
         if (numSamples > 0)
         {
             std::cout << " ( ";
-            for (int ss=0; ss<numSamples; ss++)
+            for (unsigned int ss=0; ss<numSamples; ss++)
                 std::cout << ts->getSampleTime(ss) << " ";
             std::cout << ")";
         }
@@ -232,7 +234,7 @@ void readSimpleProperties(const std::string &archiveName)
         std::cout << "    ..and values: ";
         if (numSamples > 0)
         {
-            for (int ss=0; ss<numSamples; ss++)
+            for (unsigned int ss=0; ss<numSamples; ss++)
             {
                 ISampleSelector iss( (index_t) ss);
                 switch (dType.getPod())

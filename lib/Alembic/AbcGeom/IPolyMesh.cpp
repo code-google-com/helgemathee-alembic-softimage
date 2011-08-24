@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -38,15 +38,16 @@
 
 namespace Alembic {
 namespace AbcGeom {
+namespace ALEMBIC_VERSION_NS {
 
 //-*****************************************************************************
 MeshTopologyVariance IPolyMeshSchema::getTopologyVariance()
 {
     ALEMBIC_ABC_SAFE_CALL_BEGIN( "IPolyMeshSchema::getTopologyVariance()" );
 
-    if ( m_indices.isConstant() && m_counts.isConstant() )
+    if ( m_indicesProperty.isConstant() && m_countsProperty.isConstant() )
     {
-        if ( m_positions.isConstant() )
+        if ( m_positionsProperty.isConstant() )
         {
             return kConstantTopology;
         }
@@ -70,7 +71,7 @@ MeshTopologyVariance IPolyMeshSchema::getTopologyVariance()
 void IPolyMeshSchema::init( const Abc::Argument &iArg0,
                             const Abc::Argument &iArg1 )
 {
-    ALEMBIC_ABC_SAFE_CALL_BEGIN( "IPolyMeshTrait::init()" );
+    ALEMBIC_ABC_SAFE_CALL_BEGIN( "IPolyMeshSchema::init()" );
 
     Abc::Arguments args;
     iArg0.setInto( args );
@@ -78,47 +79,162 @@ void IPolyMeshSchema::init( const Abc::Argument &iArg0,
 
     AbcA::CompoundPropertyReaderPtr _this = this->getPtr();
 
-    m_positions = Abc::IV3fArrayProperty( _this, "P",
-                                          args.getSchemaInterpMatching() );
-    m_indices = Abc::IInt32ArrayProperty( _this, ".faceIndices",
+    // no matching so we pick up old assets written as V3f
+    m_positionsProperty = Abc::IP3fArrayProperty( _this, "P", kNoMatching );
+
+    m_indicesProperty = Abc::IInt32ArrayProperty( _this, ".faceIndices",
                                         args.getSchemaInterpMatching() );
-    m_counts = Abc::IInt32ArrayProperty( _this, ".faceCounts",
+    m_countsProperty = Abc::IInt32ArrayProperty( _this, ".faceCounts",
                                        args.getSchemaInterpMatching() );
-
-    // older Alembic archives won't have the bounding box properties; before 1.0,
-    // we should remove the if statements and assert that older archives will
-    // not be readable without a no-op error handling policy
-    if ( this->getPropertyHeader( ".selfBnds" ) != NULL )
-    {
-        m_selfBounds = Abc::IBox3dProperty( _this, ".selfBnds", iArg0, iArg1 );
-    }
-
-    if ( this->getPropertyHeader( ".childBnds" ) != NULL )
-    {
-        m_childBounds = Abc::IBox3dProperty( _this, ".childBnds", iArg0,
-                                             iArg1 );
-    }
 
     // none of the things below here are guaranteed to exist
     if ( this->getPropertyHeader( "uv" ) != NULL )
     {
-        m_uvs = IV2fGeomParam( _this, "uv", iArg0, iArg1 );
+        m_uvsParam = IV2fGeomParam( _this, "uv", iArg0, iArg1 );
     }
 
     if ( this->getPropertyHeader( "N" ) != NULL )
     {
-        m_normals = IN3fGeomParam( _this, "N", iArg0, iArg1 );
+        m_normalsParam = IN3fGeomParam( _this, "N", iArg0, iArg1 );
     }
 
-    if ( this->getPropertyHeader( ".arbGeomParams" ) != NULL )
+
+    IObject _thisObject = this->getParent().getObject();
+    size_t numChildren = _thisObject.getNumChildren();
+    for ( size_t childIndex = 0 ; childIndex < numChildren; childIndex++ )
     {
-        m_arbGeomParams = Abc::ICompoundProperty( _this, ".arbGeomParams",
-                                                  args.getErrorHandlerPolicy()
-                                                );
+        ObjectHeader const & header = _thisObject.getChildHeader (childIndex);
+        if ( IFaceSet::matches( header ) )
+        {
+            // start out with an empty (invalid IFaceSet)
+            // accessor later on will create real IFaceSet object.
+            m_faceSets [header.getName ()] = IFaceSet ();
+        }
     }
+
+    m_faceSetsLoaded = false;
 
     ALEMBIC_ABC_SAFE_CALL_END_RESET();
 }
 
+//-*****************************************************************************
+const IPolyMeshSchema &
+IPolyMeshSchema::operator=(const IPolyMeshSchema & rhs)
+{
+    IGeomBaseSchema<PolyMeshSchemaInfo>::operator=(rhs);
+
+    m_positionsProperty = rhs.m_positionsProperty;
+    m_indicesProperty   = rhs.m_indicesProperty;
+    m_countsProperty    = rhs.m_countsProperty;
+
+    m_uvsParam          = rhs.m_uvsParam;
+    m_normalsParam      = rhs.m_normalsParam;
+
+    // lock, reset
+    boost::mutex::scoped_lock l(m_faceSetsMutex);
+    m_faceSetsLoaded = false;
+    m_faceSets.clear ();
+
+    return *this;
+}
+
+//-*****************************************************************************
+void IPolyMeshSchema::loadFaceSetNames()
+{
+    // Caller must ensure they have locked m_faceSetsMutex.
+    // (allows us to use non-recursive mutex)
+    ALEMBIC_ABC_SAFE_CALL_BEGIN( "IPolyMeshSchema::loadFaceSetNames()" );
+
+    if (!m_faceSetsLoaded)
+    {
+        // iterate over childHeaders, and if header matches 
+        // FaceSet add to our vec
+        IObject _thisObject = this->getParent().getObject();
+
+        size_t numChildren = _thisObject.getNumChildren();
+        for ( size_t childIndex = 0 ; childIndex < numChildren; childIndex++ )
+        {
+            ObjectHeader const & header = _thisObject.getChildHeader (childIndex);
+            if ( IFaceSet::matches( header ) )
+            {
+                // start out with an empty (invalid IFaceSet)
+                // accessor later on will create real IFaceSet object.
+                m_faceSets [header.getName ()] = IFaceSet ();
+            }
+        }
+        m_faceSetsLoaded = true;
+    }
+
+    ALEMBIC_ABC_SAFE_CALL_END();
+}
+
+//-*****************************************************************************
+void IPolyMeshSchema::getFaceSetNames( std::vector<std::string> &oFaceSetNames )
+{
+    ALEMBIC_ABC_SAFE_CALL_BEGIN( "IPolyMeshSchema::getFaceSetNames()" );
+
+    boost::mutex::scoped_lock l(m_faceSetsMutex);
+    loadFaceSetNames();
+
+    for ( std::map<std::string, IFaceSet>::const_iterator faceSetIter =
+              m_faceSets.begin(); faceSetIter != m_faceSets.end();
+          ++faceSetIter )
+    {
+        oFaceSetNames.push_back( faceSetIter->first );
+    }
+
+    ALEMBIC_ABC_SAFE_CALL_END();
+}
+
+//-*****************************************************************************
+bool
+IPolyMeshSchema::hasFaceSet( const std::string &iFaceSetName )
+{
+    ALEMBIC_ABC_SAFE_CALL_BEGIN( "IPolyMeshSchema::hasFaceSet (iFaceSetName)" );
+
+    boost::mutex::scoped_lock l(m_faceSetsMutex);
+    if (!m_faceSetsLoaded)
+    {
+        loadFaceSetNames();
+    }
+
+    return (m_faceSets.find (iFaceSetName) != m_faceSets.end ());
+
+    ALEMBIC_ABC_SAFE_CALL_END();
+
+    return false;
+}
+
+//-*****************************************************************************
+IFaceSet
+IPolyMeshSchema::getFaceSet ( const std::string &iFaceSetName )
+{
+    ALEMBIC_ABC_SAFE_CALL_BEGIN( "IPolyMeshSchema::getFaceSet()" );
+    boost::mutex::scoped_lock l(m_faceSetsMutex);
+    if (!m_faceSetsLoaded)
+    {
+        loadFaceSetNames();
+    }
+
+    ABCA_ASSERT( m_faceSets.find (iFaceSetName) != m_faceSets.end (),
+        "The requested FaceSet name can't be found in PolyMesh.");
+
+    if (!m_faceSets [iFaceSetName])
+    {
+        // We haven't yet loaded the faceSet, so create/load it
+        m_faceSets [iFaceSetName] = IFaceSet ( this->getParent().getObject(),
+                                               iFaceSetName );
+    }
+
+    return m_faceSets [iFaceSetName];
+
+    ALEMBIC_ABC_SAFE_CALL_END();
+
+    IFaceSet emptyFaceSet;
+    return emptyFaceSet;
+}
+
+
+} // End namespace ALEMBIC_VERSION_NS
 } // End namespace AbcGeom
 } // End namespace Alembic

@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks, Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -45,8 +45,9 @@
 
 namespace Alembic {
 namespace AbcGeom {
+namespace ALEMBIC_VERSION_NS {
 
-namespace Abc = ::Alembic::Abc;
+namespace Abc = ::Alembic::Abc::ALEMBIC_VERSION_NS;
 using namespace Abc;
 
 //-*****************************************************************************
@@ -69,7 +70,21 @@ enum XformOperationType
     kScaleOperation = 0,
     kTranslateOperation = 1,
     kRotateOperation = 2,
-    kMatrixOperation = 3
+    kMatrixOperation = 3,
+    kRotateXOperation = 4,
+    kRotateYOperation = 5,
+    kRotateZOperation = 6
+};
+
+//-*****************************************************************************
+//! \brief Enum that indicates the type of 2d operation for cameras.
+//! This enum is used when encoding and decoding the 2d filmback data for
+//! cameras.
+enum FilmBackXformOperationType
+{
+    kScaleFilmBackOperation = 0,
+    kTranslateFilmBackOperation = 1,
+    kMatrixFilmBackOperation = 2
 };
 
 //-*****************************************************************************
@@ -78,14 +93,21 @@ enum XformOperationType
 template <class PROP, class SAMP>
 inline void SetPropUsePrevIfNull( PROP iProp, SAMP iSamp )
 {
-    if ( iSamp ) { iProp.set( iSamp ); }
-    else { iProp.setFromPrevious(); }
+    if ( iProp )
+    {
+        // really only valid with array properties
+        assert( iProp.isArray() );
+
+        if ( iSamp ) { iProp.set( iSamp ); }
+        else { iProp.setFromPrevious(); }
+    }
 }
 
 template <>
 inline void SetPropUsePrevIfNull<Abc::OStringProperty, std::string>(
     Abc::OStringProperty iProp, std::string iSamp )
 {
+    if ( ! iProp ) { return; }
     if ( iSamp != "" ) { iProp.set( iSamp ); }
     else { iProp.setFromPrevious(); }
 }
@@ -94,6 +116,7 @@ template <>
 inline void SetPropUsePrevIfNull<Abc::OWstringProperty, Alembic::Util::wstring>(
     Abc::OWstringProperty iProp, Alembic::Util::wstring iSamp )
 {
+    if ( ! iProp ) { return; }
     if ( iSamp != L"" ) { iProp.set( iSamp ); }
     else { iProp.setFromPrevious(); }
 }
@@ -102,6 +125,7 @@ template <>
 inline void SetPropUsePrevIfNull<Abc::OBox3dProperty, Abc::Box3d>(
     Abc::OBox3dProperty iProp, Abc::Box3d iSamp )
 {
+    if ( ! iProp ) { return; }
     if ( iSamp.hasVolume() ) { iProp.set( iSamp ); }
     else { iProp.setFromPrevious(); }
 }
@@ -134,6 +158,21 @@ inline double RadiansToDegrees( double iRadians )
     return iRadians * ( 180.0 / M_PI );
 }
 
+//-*****************************************************************************
+//! A couple simple tests for if something is a GeomParam
+inline bool IsGeomParam( const AbcA::MetaData &iMetaData )
+{
+    return iMetaData.get( "isGeomParam" ) == "true";
+}
+
+inline bool IsGeomParam( const AbcA::PropertyHeader &iHeader )
+{
+    return IsGeomParam( iHeader.getMetaData() );
+}
+
+} // End namespace ALEMBIC_VERSION_NS
+
+using namespace ALEMBIC_VERSION_NS;
 
 } // End namespace AbcGeom
 } // End namespace Alembic

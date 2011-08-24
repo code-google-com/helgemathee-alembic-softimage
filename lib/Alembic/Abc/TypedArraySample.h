@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -42,6 +42,7 @@
 
 namespace Alembic {
 namespace Abc {
+namespace ALEMBIC_VERSION_NS {
 
 using Alembic::Util::Dimensions;
 
@@ -73,7 +74,7 @@ public:
     //-*************************************************************************
     // From std::vector
     TypedArraySample( const value_vector &iVec )
-      : AbcA::ArraySample( reinterpret_cast<const void *>( iVec.size() > 0 ? 
+      : AbcA::ArraySample( reinterpret_cast<const void *>( iVec.size() > 0 ?
                                                            &iVec.front() :
                                                            NULL ),
                            TRAITS::dataType(), Dimensions( iVec.size() ) ) {}
@@ -81,7 +82,7 @@ public:
     // This is for the case in which the data is multi-dimensional
     TypedArraySample( const value_vector &iVec,
                       const Dimensions &iDims )
-      : AbcA::ArraySample( reinterpret_cast<const void *>( iVec.size() > 0 ? 
+      : AbcA::ArraySample( reinterpret_cast<const void *>( iVec.size() > 0 ?
                                                            &iVec.front() :
                                                            NULL ),
                            TRAITS::dataType(), iDims )
@@ -136,6 +137,7 @@ public:
     ALEMBIC_OPERATOR_BOOL( ArraySample::valid() );
 };
 
+#if 0
 //-*****************************************************************************
 // We need a "side-along" TypedArraySamplePtr. Taking advantage of the fact
 // that static-cast is valid here.
@@ -168,6 +170,7 @@ AllocateTypedArraySample( const Dimensions &iDims )
         return ret;
     }
 }
+#endif
 
 //-*****************************************************************************
 // TYPEDEFS
@@ -298,6 +301,10 @@ typedef boost::shared_ptr<N2dArraySample> N2dArraySamplePtr;
 
 typedef boost::shared_ptr<N3fArraySample> N3fArraySamplePtr;
 typedef boost::shared_ptr<N3dArraySample> N3dArraySamplePtr;
+
+} // End namespace ALEMBIC_VERSION_NS
+
+using namespace ALEMBIC_VERSION_NS;
 
 } // End namespace Abc
 } // End namespace Alembic

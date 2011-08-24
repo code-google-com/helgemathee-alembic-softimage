@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks, Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -38,6 +38,7 @@
 
 namespace Alembic {
 namespace Abc {
+namespace ALEMBIC_VERSION_NS {
 
 //-*****************************************************************************
 IScalarProperty::~IScalarProperty()
@@ -47,7 +48,7 @@ IScalarProperty::~IScalarProperty()
 }
 
 //-*****************************************************************************
-size_t IScalarProperty::getNumSamples()
+size_t IScalarProperty::getNumSamples() const
 {
     ALEMBIC_ABC_SAFE_CALL_BEGIN( "IScalarProperty::getNumSamples()" );
 
@@ -60,7 +61,7 @@ size_t IScalarProperty::getNumSamples()
 }
 
 //-*****************************************************************************
-bool IScalarProperty::isConstant()
+bool IScalarProperty::isConstant() const
 {
     ALEMBIC_ABC_SAFE_CALL_BEGIN( "IScalarProperty::isConstant()" );
 
@@ -69,11 +70,11 @@ bool IScalarProperty::isConstant()
     ALEMBIC_ABC_SAFE_CALL_END();
 
     // Not all error handlers throw, so return a default.
-    return true;
+    return false;
 }
 
 //-*****************************************************************************
-AbcA::TimeSamplingPtr IScalarProperty::getTimeSampling()
+AbcA::TimeSamplingPtr IScalarProperty::getTimeSampling() const
 {
     ALEMBIC_ABC_SAFE_CALL_BEGIN( "IScalarProperty::getTimeSampling()" );
 
@@ -90,8 +91,8 @@ void IScalarProperty::get( void *oSamp, const ISampleSelector &iSS )
 {
     ALEMBIC_ABC_SAFE_CALL_BEGIN( "IScalarProperty::get()" );
 
-    size_t index = iSS.getIndex( m_property->getTimeSampling(),
-        m_property->getNumSamples() );
+    AbcA::index_t index = iSS.getIndex( m_property->getTimeSampling(),
+                                        m_property->getNumSamples() );
     m_property->getSample( index, oSamp );
 
     ALEMBIC_ABC_SAFE_CALL_END();
@@ -137,5 +138,6 @@ void IScalarProperty::init( AbcA::CompoundPropertyReaderPtr iParent,
     ALEMBIC_ABC_SAFE_CALL_END_RESET();
 }
 
+} // End namespace ALEMBIC_VERSION_NS
 } // End namespace Abc
 } // End namespace Alembic

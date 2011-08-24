@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -52,6 +52,9 @@
 //-*****************************************************************************
 namespace AbcA = Alembic::AbcCoreAbstract::v1;
 using AbcA::chrono_t;
+using AbcA::index_t;
+
+using namespace boost;
 
 typedef std::vector<chrono_t> TimeVector;
 
@@ -91,7 +94,7 @@ void validateTimeSampling( const AbcA::TimeSampling &timeSampling,
               << std::endl;
 
     TESTING_MESSAGE_ASSERT( timeSamplingType.isAcyclic() ||
-        numSamplesPerCycle == timeSampling.getNumSamples(),
+        numSamplesPerCycle == timeSampling.getNumStoredTimes(),
         "Number of samples given doesn't match number returned" );
 
     //-*************************************************************************
@@ -129,16 +132,14 @@ void validateTimeSampling( const AbcA::TimeSampling &timeSampling,
 //-*****************************************************************************
 void testTimeSampling( const AbcA::TimeSampling &timeSampling,
                        const AbcA::TimeSamplingType &timeSamplingType,
-                       size_t numSamples )
+                       index_t numSamples )
 {
-    const size_t lastIndex = numSamples - 1;
-    const chrono_t minTime = timeSampling.getSampleTime( 0 );
-    const chrono_t maxTime = timeSampling.getSampleTime( lastIndex );
+    const index_t lastIndex = numSamples - 1;
 
     const chrono_t timePerCycle = timeSamplingType.getTimePerCycle();
-    const size_t numSamplesPerCycle = timeSamplingType.getNumSamplesPerCycle();
+    const index_t numSamplesPerCycle = timeSamplingType.getNumSamplesPerCycle();
 
-    const size_t numStoredTimes = timeSampling.getNumSamples();
+    const index_t numStoredTimes = timeSampling.getNumStoredTimes();
 
     TESTING_MESSAGE_ASSERT( timeSamplingType.isAcyclic() ||
         numStoredTimes == numSamplesPerCycle,
@@ -150,19 +151,20 @@ void testTimeSampling( const AbcA::TimeSampling &timeSampling,
               << "Only the first " << numStoredTimes << " values are stored; "
               << "the rest are computed." << std::endl << std::endl;
 
-    for ( size_t i = 0; i < numSamples ; ++i )
+    for ( index_t i = 0; i < numSamples ; ++i )
     {
         std::cout << i << ": " << timeSampling.getSampleTime( i )
                   << std::endl;
 
         chrono_t timeI = timeSampling.getSampleTime( i );
-        size_t floorIndex = timeSampling.getFloorIndex(
+        index_t floorIndex = timeSampling.getFloorIndex(
             timeI, numSamples ).first;
 
-        size_t ceilIndex = timeSampling.getCeilIndex(
+        index_t ceilIndex = timeSampling.getCeilIndex(
             timeI, numSamples ).first;
 
-        size_t nearIndex = timeSampling.getNearIndex( timeI, numSamples ).first;
+        index_t nearIndex = timeSampling.getNearIndex(
+            timeI, numSamples ).first;
 
         // floor
         TESTING_MESSAGE_ASSERT(
@@ -496,12 +498,12 @@ void testAcyclicTime2()
     const size_t numSamps = 44;
 
     chrono_t ranTime = 0.0;
-    srand48( numSamps );
+    Imath::srand48( numSamps );
 
     for ( size_t i = 0 ; i < numSamps ; ++i )
     {
         // sample randomly
-        ranTime += drand48();
+        ranTime += Imath::drand48();
         tvec.push_back( ranTime );
     }
 
@@ -529,16 +531,16 @@ void testAcyclicTime3()
     const size_t numSamps = 79;
 
     chrono_t ranTime = 0.0;
-    srand48( numSamps );
+    Imath::srand48( numSamps );
 
     for ( size_t i = 0 ; i < numSamps ; ++i )
     {
         // sample randomly
-        ranTime += drand48() * (chrono_t)i;
+        ranTime += Imath::drand48() * (chrono_t)i;
         tvec.push_back( ranTime );
     }
 
-    AbcA::TimeSamplingType::AcyclicFlag acf;
+    AbcA::TimeSamplingType::AcyclicFlag acf = AbcA::TimeSamplingType::kAcyclic;
 
     const AbcA::TimeSamplingType tSampTyp( acf );
     const AbcA::TimeSampling tSamp( tSampTyp, tvec );
@@ -557,7 +559,7 @@ void testBadTypes()
 {
     AbcA::TimeSamplingType t;
     TESTING_ASSERT_THROW( t =
-    	AbcA::TimeSamplingType(1, AbcA::TimeSamplingType::AcyclicTimePerCycle()),
+        AbcA::TimeSamplingType(1, AbcA::TimeSamplingType::AcyclicTimePerCycle()),
         Alembic::Util::Exception);
 
     TESTING_ASSERT_THROW(t = AbcA::TimeSamplingType(1, 0.0),
@@ -585,6 +587,10 @@ void testBadTypes()
 //-*****************************************************************************
 int main( int, char** )
 {
+    // make sure somebody didn't mess up the ALEMBIC_LIBRARY_VERSION
+    TESTING_ASSERT(ALEMBIC_LIBRARY_VERSION > 9999 &&
+        ALEMBIC_LIBRARY_VERSION < 999999);
+
     // cyclic is trickiest
     testCyclicTime1();
     testCyclicTime2();

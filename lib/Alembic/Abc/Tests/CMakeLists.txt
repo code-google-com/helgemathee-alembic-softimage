@@ -1,7 +1,8 @@
 ##-*****************************************************************************
 ##
-## Copyright (c) 2009-2010, Industrial Light & Magic,
-##   a division of Lucasfilm Entertainment Company Ltd.
+## Copyright (c) 2009-2011,
+##  Sony Pictures Imageworks Inc. and
+##  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 ##
 ## All rights reserved.
 ##
@@ -37,7 +38,6 @@ SET( TEST_LIBS
      AlembicAbc
      AlembicAbcCoreHDF5
      AlembicAbcCoreAbstract
-     AlembicMD5Hash
      AlembicUtil
      ${ALEMBIC_HDF5_LIBS}
      ${ALEMBIC_ILMBASE_LIBS}
@@ -87,6 +87,10 @@ ADD_TEST( Abc_Array_Property_TEST Abc_ArrayPropertyTest )
 
 #-******************************************************************************
 
+ADD_EXECUTABLE( Abc_ArchiveTest ArchiveTest.cpp )
+TARGET_LINK_LIBRARIES( Abc_ArchiveTest ${TEST_LIBS} )
+ADD_TEST( Abc_Archive_TEST Abc_ArchiveTest )
+
 ADD_EXECUTABLE( Abc_CyclicPropertyTest CyclicPropertyTest.cpp )
 TARGET_LINK_LIBRARIES( Abc_CyclicPropertyTest ${TEST_LIBS} )
 ADD_TEST( Abc_Cyclic_Property_TEST Abc_CyclicPropertyTest )
@@ -110,7 +114,3 @@ ADD_TEST( Abc_CacheControl_TEST Abc_CacheControlTest )
 ADD_EXECUTABLE( Abc_RedundantDataPathsTest RedundantDataTest.cpp )
 TARGET_LINK_LIBRARIES( Abc_RedundantDataPathsTest ${TEST_LIBS} )
 ADD_TEST( Abc_RedundantDataPaths_TEST Abc_RedundantDataPathsTest )
-
-ADD_EXECUTABLE( Abc_TypedArraySampleTest TypedArraySampleTest.cpp )
-TARGET_LINK_LIBRARIES( Abc_TypedArraySampleTest ${TEST_LIBS} )
-ADD_TEST( Abc_TypedArraySample_TEST Abc_TypedArraySampleTest )

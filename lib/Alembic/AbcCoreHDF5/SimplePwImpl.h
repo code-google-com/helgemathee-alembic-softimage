@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks, Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -165,7 +165,6 @@ SimplePwImpl<ABSTRACT,IMPL,SAMPLE,KEY>::SimplePwImpl
 )
   : m_parent( iParent )
   , m_parentGroup( iParentGroup )
-  , m_timeSamplingIndex(iTimeSamplingIndex)
   , m_fileDataType( -1 )
   , m_cleanFileDataType( false )
   , m_nativeDataType( -1 )
@@ -174,6 +173,7 @@ SimplePwImpl<ABSTRACT,IMPL,SAMPLE,KEY>::SimplePwImpl
   , m_nextSampleIndex( 0 )
   , m_firstChangedIndex( 0 )
   , m_lastChangedIndex( 0 )
+  , m_timeSamplingIndex(iTimeSamplingIndex)
 {
     // Check the validity of all inputs.
     ABCA_ASSERT( m_parent, "Invalid parent" );
@@ -279,12 +279,10 @@ void SimplePwImpl<ABSTRACT,IMPL,SAMPLE,KEY>::setSample
     // This applies to acyclic sampling only
     ABCA_ASSERT(
         !m_header->getTimeSampling()->getTimeSamplingType().isAcyclic() ||
-        m_header->getTimeSampling()->getNumSamples() > m_nextSampleIndex,
+        m_header->getTimeSampling()->getNumStoredTimes() > 
+        m_nextSampleIndex,
         "Can not write more samples than we have times for when using "
         "Acyclic sampling." );
-
-    // Figure out if we need to write the sample. At first, no.
-    bool needToWriteSample = false;
 
     // The Key helps us analyze the sample.
     KEY key = static_cast<IMPL*>(this)->computeSampleKey( iSamp );
@@ -339,7 +337,8 @@ void SimplePwImpl<ABSTRACT,IMPL,SAMPLE,KEY>::setFromPreviousSample
     // This applies to acyclic sampling only
     ABCA_ASSERT(
         !m_header->getTimeSampling()->getTimeSamplingType().isAcyclic() ||
-        m_header->getTimeSampling()->getNumSamples() > m_nextSampleIndex,
+        m_header->getTimeSampling()->getNumStoredTimes() >
+        m_nextSampleIndex,
         "Can not set more samples than we have times for when using "
         "Acyclic sampling." );
 
@@ -366,7 +365,7 @@ void SimplePwImpl<ABSTRACT,IMPL,SAMPLE,KEY>::setTimeSamplingIndex
             iIndex );
 
     ABCA_ASSERT( !ts->getTimeSamplingType().isAcyclic() ||
-        ts->getNumSamples() > m_nextSampleIndex,
+        ts->getNumStoredTimes() > m_nextSampleIndex,
         "Already have written more samples than we have times for when using "
         "Acyclic sampling." );
 
@@ -386,9 +385,7 @@ SimplePwImpl<ABSTRACT,IMPL,SAMPLE,KEY>::~SimplePwImpl()
         { H5Tclose( m_fileDataType ); }
         if ( m_nativeDataType >= 0 && m_cleanNativeDataType )
         { H5Tclose( m_nativeDataType ); }
-        
-        const std::string &myName = m_header->getName();
-        
+
         // Check validity of the group.
         ABCA_ASSERT( m_parentGroup >= 0, "Invalid parent group" );
 

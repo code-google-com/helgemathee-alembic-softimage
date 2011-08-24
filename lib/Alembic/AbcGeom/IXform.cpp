@@ -37,50 +37,9 @@
 #include <Alembic/AbcGeom/IXform.h>
 #include <Alembic/AbcGeom/XformOp.h>
 
-#include <boost/lexical_cast.hpp>
-
 namespace Alembic {
 namespace AbcGeom {
-
-//-*****************************************************************************
-void
-IXformSchema::IDefaultedDoubleProperty::init()
-{
-    ALEMBIC_ABC_SAFE_CALL_BEGIN(
-        "IXformSchema::IDefaultedDoubleProperty::init()" );
-
-    const AbcA::PropertyHeader *ph = m_parent->getPropertyHeader( m_name );
-
-    if ( ph != NULL )
-    {
-        m_property = Abc::IDoubleProperty( m_parent, m_name,
-                                           m_errorHandler.getPolicy() );
-
-        m_isConstant = m_property.isConstant();
-
-        m_property.get( m_constantValue );
-    }
-
-    ALEMBIC_ABC_SAFE_CALL_END_RESET();
-}
-
-//-*****************************************************************************
-double
-IXformSchema::IDefaultedDoubleProperty::getValue(
-    const Abc::ISampleSelector &iSS )
-{
-    ALEMBIC_ABC_SAFE_CALL_BEGIN(
-        "IXformSchema::IDefaultedDoubleProperty::getValue()" );
-
-    if ( m_isConstant )
-    { return m_constantValue; }
-    else
-    { return m_property.getValue( iSS ); }
-
-    ALEMBIC_ABC_SAFE_CALL_END();
-
-    return 0.0;
-}
+namespace ALEMBIC_VERSION_NS {
 
 //-*****************************************************************************
 void IXformSchema::init( Abc::SchemaInterpMatching iMatching )
@@ -89,65 +48,138 @@ void IXformSchema::init( Abc::SchemaInterpMatching iMatching )
 
     AbcA::CompoundPropertyReaderPtr ptr = this->getPtr();
 
-    if ( this->getPropertyHeader( ".childBnds" ) != NULL )
+    if ( ptr->getPropertyHeader( ".childBnds" ) )
     {
-        m_childBounds = Abc::IBox3dProperty( ptr, ".childBnds", iMatching );
+        m_childBoundsProperty = Abc::IBox3dProperty( ptr, ".childBnds", iMatching );
     }
 
-    m_inherits = Abc::IBoolProperty( ptr, ".inherits", iMatching );
-
-    m_ops = Abc::IUcharArrayProperty( ptr, ".ops", iMatching );
-
-    // OK, now the fun stuff!
-    //
-    // All the above Properties are guaranteed to exist.  None of the actual
-    // xform-data-having properties need to exist, though.  So we use the same
-    // well-formed naming mechanism from OXform::set() to make an array of
-    // IDefaultedDoubleProperties.
-
-
-    Abc::UcharArraySample opSampArray;
-    if ( m_ops.getNumSamples() > 0 ) { opSampArray = *(m_ops.getValue()); }
-
-    std::size_t numOps = 0;
-
-    if ( opSampArray )
-    { numOps = opSampArray.size(); }
-
-    m_opArray.reserve( numOps );
-
-    m_isConstant = true;
-    m_isConstantIdentity = true;
-
-    for ( std::size_t i = 0 ; i < numOps ; ++i )
+    if ( ptr->getPropertyHeader( ".inherits" ) )
     {
-        XformOp op( opSampArray[i] );
+        m_inheritsProperty = Abc::IBoolProperty( ptr, ".inherits", iMatching );
+    }
 
-        std::string oname = boost::lexical_cast<std::string>( i );
+    AbcA::ScalarPropertyReaderPtr ops = ptr->getScalarProperty(  ".ops" );
 
-        m_opArray.push_back( op );
+    m_useArrayProp = false;
 
-        for ( std::size_t j = 0 ; j < op.getNumChannels() ; ++j )
+    const AbcA::PropertyHeader *valsPH = ptr->getPropertyHeader( ".vals" );
+    if ( valsPH != NULL )
+    {
+        if ( valsPH->isScalar() )
         {
-            std::string channame = op.getChannelName( j );
-
-            IDefaultedDoubleProperty prop(
-                ptr, channame + oname, this->getErrorHandler(),
-                op.getDefaultChannelValue( j ) );
-
-            m_props.push_back( prop );
-
-            m_isConstant = m_isConstant && prop.isConstant();
-
-            m_isConstantIdentity = m_isConstantIdentity
-                && ( ! prop.isNonDefault() );
+            m_valsProperty = ptr->getScalarProperty( valsPH->getName() );
+        }
+        else
+        {
+            m_useArrayProp = true;
+            m_valsProperty = ptr->getArrayProperty( valsPH->getName() );
         }
     }
 
-    m_isConstantIdentity = m_isConstantIdentity && m_isConstant;
+    m_isConstantIdentity = true;
 
-    m_isConstant = m_isConstant && m_inherits.isConstant();
+    if ( ptr->getPropertyHeader( "isNotConstantIdentity" ) )
+    {
+        // that it's here at all means we're not constant identity.
+        m_isConstantIdentity = false;
+    }
 
+    m_isConstant = true;
+
+    if ( m_valsProperty )
+    {
+
+        if ( m_useArrayProp )
+        { m_isConstant = m_valsProperty->asArrayPtr()->isConstant(); }
+        else
+        { m_isConstant = m_valsProperty->asScalarPtr()->isConstant(); }
+    }
+
+    m_isConstant = m_isConstant && m_inheritsProperty.isConstant();
+
+    std::set < Alembic::Util::uint32_t > animChannels;
+
+    if ( ptr->getPropertyHeader( ".animChans" ) )
+    {
+        Abc::IUInt32ArrayProperty p( ptr, ".animChans" );
+        if ( p.getNumSamples() > 0 )
+        {
+            Abc::UInt32ArraySamplePtr animSamp;
+            p.get( animSamp, p.getNumSamples() - 1 );
+            for ( std::size_t i = 0; i < animSamp->size(); ++i )
+            {
+                animChannels.insert( (*animSamp)[i] );
+            }
+        }
+    }
+
+    if ( ops && ops->getNumSamples() > 0 )
+    {
+
+        std::size_t numOps = ops->getHeader().getDataType().getExtent();
+        std::vector<Alembic::Util::uint8_t> opVec( numOps );
+        ops->getSample( 0, &(opVec.front()) );
+
+        for ( std::size_t i = 0; i < numOps; ++i )
+        {
+            XformOp op( opVec[i] );
+            m_sample.addOp( op );
+        }
+
+        std::set < Alembic::Util::uint32_t >::iterator it, itEnd;
+        std::vector< XformOp >::iterator op = m_sample.m_ops.begin();
+        std::vector< XformOp >::iterator opEnd = m_sample.m_ops.end();
+        std::size_t curChan = 0;
+        std::size_t chanPos = 0;
+
+        for ( it = animChannels.begin(), itEnd = animChannels.end();
+            it != itEnd; ++it )
+        {
+            Alembic::Util::uint32_t animChan = *it;
+            while ( op != opEnd )
+            {
+                std::size_t numChans = op->getNumChannels();
+                bool foundChan = false;
+                while ( curChan < numChans )
+                {
+                    if ( animChan == chanPos )
+                    {
+                        op->m_animChannels.insert( curChan );
+                        foundChan = true;
+                        break;
+                    }
+
+                    ++curChan;
+                    ++chanPos;
+                }
+
+                // move on to the next animChan, because we found the current one
+                if ( foundChan == true )
+                {
+                    ++curChan;
+                    ++chanPos;
+                    break;
+                }
+
+                ++op;
+                curChan = 0;
+            }
+        }
+    }
+
+    if ( ptr->getPropertyHeader( ".arbGeomParams" ) != NULL )
+    {
+        m_arbGeomParams = Abc::ICompoundProperty( ptr, ".arbGeomParams",
+                                                  getErrorHandlerPolicy()
+                                                );
+    }
+
+    if ( ptr->getPropertyHeader( ".userProperties" ) != NULL )
+    {
+        m_userProperties = Abc::ICompoundProperty( ptr, ".userProperties",
+                                                  getErrorHandlerPolicy()
+                                                );
+    }
     ALEMBIC_ABC_SAFE_CALL_END_RESET();
 }
 
@@ -156,7 +188,15 @@ AbcA::TimeSamplingPtr IXformSchema::getTimeSampling()
 {
     ALEMBIC_ABC_SAFE_CALL_BEGIN( "IXformSchema::getTimeSampling()" );
 
-    return m_ops.getTimeSampling();
+    if ( m_inheritsProperty )
+    {
+        return m_inheritsProperty.getTimeSampling();
+    }
+    else
+    {
+        AbcA::TimeSamplingPtr ret;
+        return ret;
+    }
 
     ALEMBIC_ABC_SAFE_CALL_END();
 
@@ -169,7 +209,11 @@ std::size_t IXformSchema::getNumSamples()
 {
     ALEMBIC_ABC_SAFE_CALL_BEGIN( "IXformSchema::getNumSamples()" );
 
-    return m_ops.getNumSamples();
+    if ( m_inheritsProperty )
+    {
+        return m_inheritsProperty.getNumSamples();
+    }
+    else { return 0; }
 
     ALEMBIC_ABC_SAFE_CALL_END();
 
@@ -177,45 +221,82 @@ std::size_t IXformSchema::getNumSamples()
 }
 
 //-*****************************************************************************
+void IXformSchema::getChannelValues( const AbcA::index_t iSampleIndex,
+    XformSample & oSamp )
+{
+    std::vector<Alembic::Util::float64_t> dataVec;
+
+    if ( m_useArrayProp )
+    {
+        AbcA::ArraySamplePtr sptr;
+        m_valsProperty->asArrayPtr()->getSample( iSampleIndex, sptr );
+
+        dataVec.assign(
+            static_cast<const Alembic::Util::float64_t*>( sptr->getData() ),
+            static_cast<const Alembic::Util::float64_t*>( sptr->getData() ) +
+            sptr->size() );
+    }
+    else
+    {
+        dataVec.resize( m_valsProperty->asScalarPtr()->getDataType().getExtent() );
+        m_valsProperty->asScalarPtr()->getSample( iSampleIndex, &(dataVec.front()) );
+    }
+
+    std::vector< XformOp >::iterator op = oSamp.m_ops.begin();
+    std::vector< XformOp >::iterator opEnd = oSamp.m_ops.end();
+    std::size_t chanPos = 0;
+    while ( op != opEnd )
+    {
+        for ( std::size_t j = 0; j < op->getNumChannels();
+            ++j, ++chanPos )
+        {
+            op->setChannelValue( j, dataVec[chanPos] );
+        }
+        ++op;
+    }
+}
+
+//-*****************************************************************************
 void IXformSchema::get( XformSample &oSamp, const Abc::ISampleSelector &iSS )
 {
     ALEMBIC_ABC_SAFE_CALL_BEGIN( "IXformSchema::get()" );
 
-    oSamp.clear();
+    oSamp.reset();
 
-    AbcA::index_t sampIdx = iSS.getIndex( m_ops.getTimeSampling(),
-        m_ops.getNumSamples() );
+    if ( ! valid() ) { return; }
+
+    oSamp = m_sample;
+
+    if ( m_inheritsProperty.getNumSamples() )
+    {
+        oSamp.setInheritsXforms( m_inheritsProperty.getValue( iSS ) );
+    }
+
+    if ( m_childBoundsProperty && m_childBoundsProperty.getNumSamples() > 0 )
+    {
+        oSamp.setChildBounds( m_childBoundsProperty.getValue( iSS ) );
+    }
+
+    if ( ! m_valsProperty ) { return; }
+
+    AbcA::index_t numSamples = 0;
+    if ( m_useArrayProp )
+    {
+        numSamples = m_valsProperty->asArrayPtr()->getNumSamples();
+    }
+    else
+    {
+        numSamples = m_valsProperty->asScalarPtr()->getNumSamples();
+    }
+
+    if ( numSamples == 0 ) { return; }
+
+    AbcA::index_t sampIdx = iSS.getIndex( m_valsProperty->getTimeSampling(),
+                                          numSamples );
 
     if ( sampIdx < 0 ) { return; }
 
-    std::size_t prevIdx = 0;
-    for ( std::size_t i = 0 ; i < m_opArray.size() ; ++i )
-    {
-        XformOp op = m_opArray[i];
-        for ( std::size_t j = 0 ; j < op.getNumChannels() ; ++j )
-        {
-            size_t pidx = j + prevIdx;
-
-            op.setChannelValue( j, m_props[pidx].getValue( sampIdx ) );
-
-            if ( ! m_props[pidx].isConstant() )
-            {
-                op.m_animChannels.insert( j );
-            }
-        }
-        prevIdx += op.getNumChannels();
-        oSamp.addOp( op );
-    }
-
-    if ( m_inherits.getNumSamples() > 0 )
-        oSamp.setInheritsXforms( m_inherits.getValue( sampIdx ) );
-    else
-        oSamp.setInheritsXforms(true);
-
-    if ( m_childBounds && m_childBounds.getNumSamples() > 0 )
-    {
-        oSamp.setChildBounds( m_childBounds.getValue( sampIdx ) );
-    }
+    this->getChannelValues( sampIdx, oSamp );
 
     ALEMBIC_ABC_SAFE_CALL_END();
 }
@@ -233,17 +314,20 @@ bool IXformSchema::getInheritsXforms( const Abc::ISampleSelector &iSS )
 {
     ALEMBIC_ABC_SAFE_CALL_BEGIN( "IXformSchema::getInheritsXforms()" );
 
-    AbcA::index_t sampIdx = iSS.getIndex( m_inherits.getTimeSampling(),
-        m_inherits.getNumSamples() );
+    if ( ! m_inheritsProperty ) { return true; }
+
+    AbcA::index_t sampIdx = iSS.getIndex( m_inheritsProperty.getTimeSampling(),
+                                          m_inheritsProperty.getNumSamples() );
 
     if ( sampIdx < 0 ) { return true; }
 
-    return m_inherits.getValue( sampIdx );
+    return m_inheritsProperty.getValue( sampIdx );
 
     ALEMBIC_ABC_SAFE_CALL_END();
 
     return true;
 }
 
+} // End namespace ALEMBIC_VERSION_NS
 } // End namespace AbcGeom
 } // End namespace Alembic

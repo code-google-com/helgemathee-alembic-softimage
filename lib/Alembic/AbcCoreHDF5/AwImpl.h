@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -57,8 +57,6 @@ private:
 
     AwImpl( const std::string &iFileName,
             const AbcA::MetaData &iMetaData );
-
-    AwImpl( const AwImpl &iCopy );
 
 public:
     virtual ~AwImpl();

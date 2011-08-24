@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks, Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -40,6 +40,11 @@
 
 namespace Abc = Alembic::Abc;
 using namespace Abc;
+
+using Alembic::AbcCoreAbstract::chrono_t;
+using Alembic::AbcCoreAbstract::index_t;
+using Alembic::Util::uint32_t;
+using Alembic::Util::float32_t;
 
 //-*****************************************************************************
 void simpleTestOut()
@@ -86,7 +91,7 @@ void simpleTestOut()
 
         TimeSampling ts(TimeSamplingType( TimeSamplingType::kAcyclic ),
             timeSamps);
-        boost::uint32_t tsidx = archive.addTimeSampling(ts);
+        uint32_t tsidx = archive.addTimeSampling(ts);
 
         OV3dArrayProperty pointy(
             OCompoundProperty( spaniard, kTop ),
@@ -154,7 +159,7 @@ void simpleTestOut()
         std::vector<std::string> emptyStanza;
         jabber.set( emptyStanza );
     }
-    
+
 
     OFloatProperty radius( clampto, "radius" );
     radius.set( 217.0f );
@@ -226,7 +231,7 @@ void simpleTestIn()
                   << pointySamp->size() << std::endl;
     }
 
-    
+
     //-*************************************************************************
     // STRING PROPERTIES
     //-*************************************************************************
@@ -268,7 +273,7 @@ void simpleTestIn()
             }
         }
     }
-    
+
     IFloatProperty radius( clampto, "radius" );
 
     std::cout << "Num clanker samples: "

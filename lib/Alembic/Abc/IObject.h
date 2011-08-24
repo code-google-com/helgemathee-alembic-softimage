@@ -1,6 +1,6 @@
 //-*****************************************************************************
 //
-// Copyright (c) 2009-2010,
+// Copyright (c) 2009-2011,
 //  Sony Pictures Imageworks, Inc. and
 //  Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
 //
@@ -43,6 +43,7 @@
 
 namespace Alembic {
 namespace Abc {
+namespace ALEMBIC_VERSION_NS {
 
 class IArchive;
 class ICompoundProperty;
@@ -74,23 +75,20 @@ public:
     template <class OBJECT_PTR>
     IObject( OBJECT_PTR iParentObject,
              const std::string &iName,
-
-             const Argument &iArg0 = Argument(),
-             const Argument &iArg1 = Argument() );
+             ErrorHandler::Policy iPcy = ErrorHandler::kThrowPolicy
+           );
 
     //! This attaches an IObject wrapper around an existing
     //! ObjectReaderPtr, with an optional error handling policy.
     template <class OBJECT_PTR>
     IObject( OBJECT_PTR iPtr,
              WrapExistingFlag iFlag,
-
-             const Argument &iArg0 = Argument(),
-             const Argument &iArg1 = Argument() )
+             ErrorHandler::Policy iPcy = ErrorHandler::kThrowPolicy )
       : m_object( GetObjectReaderPtr( iPtr ) )
     {
         // Set the error handling policy
         getErrorHandler().setPolicy(
-            GetErrorHandlerPolicy( iPtr, iArg0, iArg1 ) );
+            GetErrorHandlerPolicy( iPtr, iPcy ) );
     }
 
     //! This attaches an IObject wrapper around the top
@@ -98,13 +96,11 @@ public:
     template <class ARCHIVE_PTR>
     IObject( ARCHIVE_PTR iPtr,
              TopFlag iFlag,
-
-             const Argument &iArg0 = Argument(),
-             const Argument &iArg1 = Argument() )
+             ErrorHandler::Policy iPcy = ErrorHandler::kThrowPolicy )
     {
         // Set the error handling policy
         getErrorHandler().setPolicy(
-            GetErrorHandlerPolicy( iPtr, iArg0, iArg1 ) );
+            GetErrorHandlerPolicy( iPtr, iPcy ) );
 
         ALEMBIC_ABC_SAFE_CALL_BEGIN( "IObject::IObject( top )" );
 
@@ -225,8 +221,7 @@ private:
     void init( AbcA::ObjectReaderPtr iParentObject,
                const std::string &iName,
                ErrorHandler::Policy iParentPolicy,
-               const Argument &iArg0,
-               const Argument &iArg1 );
+               ErrorHandler::Policy iChildPolicy );
 
 public:
     AbcA::ObjectReaderPtr m_object;
@@ -240,19 +235,30 @@ GetObjectReaderPtr( IObject& iPrp ) { return iPrp.getPtr(); }
 // TEMPLATE AND INLINE FUNCTIONS
 //-*****************************************************************************
 
+template <class OBJ>
+inline ErrorHandler::Policy GetErrorHandlerPolicy( OBJ iObj,
+                                                   ErrorHandler::Policy iPcy )
+{
+    Argument arg( iPcy );
+    return GetErrorHandlerPolicy( iObj, arg );
+}
+
 //-*****************************************************************************
 template <class OBJECT_PTR>
 inline IObject::IObject( OBJECT_PTR iParentObject,
                          const std::string &iName,
-                         const Argument &iArg0,
-                         const Argument &iArg1 )
+                         ErrorHandler::Policy iPcy )
 {
     init( GetObjectReaderPtr( iParentObject ),
           iName,
 
           GetErrorHandlerPolicy( iParentObject ),
-          iArg0, iArg1 );
+          iPcy );
 }
+
+} // End namespace ALEMBIC_VERSION_NS
+
+using namespace ALEMBIC_VERSION_NS;
 
 } // End namespace Abc
 } // End namespace Alembic
