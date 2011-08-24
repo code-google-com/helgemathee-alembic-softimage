@@ -12,9 +12,11 @@ if /i "%1" == "db:" (
 	set DB=_db
 	shift
 	set VARIANT=variant=debug
+	set targetLibDir=%ALEMBIC_ROOT%\lib64\Debug
 ) ELSE (
 	set VARIANT=variant=release
 	set DB=
+	set targetLibDir=%ALEMBIC_ROOT%\lib64\Release
 )
 
 set BOOST_SRC=%ALEMBIC_ROOT%\thirdparty\boost_1_42_0
@@ -44,9 +46,13 @@ set BOOST_INC=%targetOut%\include
 set BOOST_LIB=%targetOut%\lib%db%
 set BOOST_BUILD=%targetOut%\build
 set BOOST_OUT=--includedir=%BOOST_INC% --libdir=%BOOST_LIB% --build-dir=%BOOST_BUILD%
-set BOOST_ARGS=--layout=versioned link=static runtime-link=static threading=multi %addrModel% %altCompiler%
+set BOOST_ARGS=--layout=versioned link=static runtime-link=static runtime-debugging=on threading=multi %addrModel% %altCompiler%
 set BUILD_THESE_ONLY= --with-program_options --with-iostreams --with-date_time --with-thread
 
 @echo on
 call bjam %1 %2 %3 %4 %5 install %VARIANT% %BOOST_ARGS% %BOOST_OUT% %BUILD_THESE_ONLY%
 @popd
+
+if not exist %targetLibDir% md %targetLibDir%
+copy %BOOST_LIB%\*.lib %targetLibDir% /y
+copy %BOOST_LIB%\*.dll %targetLibDir% /y

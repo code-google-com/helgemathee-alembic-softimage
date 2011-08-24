@@ -13,12 +13,14 @@ REM libs even when building debug. This way we don't have to nuke the projects t
 REM ******************************************************************************************
 	set DB=_db
 	set config=Debug
+	set linkFolderName=Debug
 	set boost_suffix=-sgd
 	set cmake_flags=/MTd
 	set zlib_suffix=d
 	shift
 ) ELSE (
 	set config=RelWithDebInfo
+	set linkFolderName=Release
 	set DB=
 	set boost_suffix=-s
 	set zlib_suffix=
@@ -63,6 +65,5 @@ set ZLIB_ARGS=--zlib_include_dir=%ZLIB_ROOT% --zlib_library=%platOut%\zlib\%conf
 
 @echo on
 pushd %platOut%
-del CMakeCache.txt
 python %ALEMBIC_ROOT%\build\bootstrap\alembic_bootstrap.py %BASE_ARGS% %HDF_ARGS% %ILM_ARGS% %BOOST_ARGS% %ZLIB_ARGS% --cflags="%ccflags%" --cxxflags="%cppflags%" %platOut% 
 popd
