@@ -284,8 +284,12 @@ def configureCMakeHDF5( cmake_args ):
 
     fullPaths = []
 
+    zlib_suffix = ''
+    if os.environ.has_key('zlib_suffix'):
+		zlib_suffix = os.environ['zlib_suffix']
+
     for lib in libNames:
-        name = "%s%s%s.%s" % ( libPrelude, lib, os.environ['zlib_suffix'], libext )
+        name = "%s%s%s.%s" % ( libPrelude, lib, zlib_suffix, libext )
         libpath = Path( libdir ).join( name )
         cmakeEntry = " -D HDF5_%s_LIBRARY:FILEPATH=%s" % ( lib, libpath )
         cmakeEntry += " -D HDF5_%s_LIBRARY_RELEASE:FILEPATH=%s" % ( lib, libpath )
@@ -724,8 +728,6 @@ Boost with STATIC, VERSIONED, and MULTITHREADED options turned on.
         print "Makesystem generator %s: " % (options.generator)
         cmake_args.append(options.generator)
         
-    print "!!!!!!!!!!!!!!!!!!!!!!!!!!"
-
     boost_status, errors = configureCMakeBoost( cmake_args )
 
     if boost_status != 0:
