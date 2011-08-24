@@ -207,9 +207,12 @@ def configureCMakeBoost( cmake_args ):
         cmake_extra_args += ' -G "%s"' % cmake_args[3]
     except IndexError:
         pass
+        
+    # skip the bootstrap for boost
+    return 0, ''
 
-    cmake_cmd='cmake --debug-trycompile -U BOOTSTRAP_* -D BOOTSTRAP_MODE:INTERNAL=TRUE -D BOOTSTRAP_BOOST:INTERNAL=TRUE -UBoost_* -UBOOST_* -UALEMBIC_BOOST_FOUND %s %s' %\
-        (cmake_extra_args, srcdir )
+    cmake_cmd='cmake -D CMAKE_CFLAGS="%s" --debug-trycompile -U BOOTSTRAP_* -D BOOTSTRAP_MODE:INTERNAL=TRUE -D BOOTSTRAP_BOOST:INTERNAL=TRUE -UBoost_* -UBOOST_* -UALEMBIC_BOOST_FOUND %s %s' %\
+        (os.environ['cmake_flags'], cmake_extra_args, srcdir )
 
     print "Executing CMake Boost configure command:\n%s" % cmake_cmd
 
@@ -282,7 +285,7 @@ def configureCMakeHDF5( cmake_args ):
     fullPaths = []
 
     for lib in libNames:
-        name = "%s%s.%s" % ( libPrelude, lib, libext )
+        name = "%s%s%s.%s" % ( libPrelude, lib, os.environ['zlib_suffix'], libext )
         libpath = Path( libdir ).join( name )
         cmakeEntry = " -D HDF5_%s_LIBRARY:FILEPATH=%s" % ( lib, libpath )
         cmakeEntry += " -D HDF5_%s_LIBRARY_RELEASE:FILEPATH=%s" % ( lib, libpath )
@@ -720,6 +723,8 @@ Boost with STATIC, VERSIONED, and MULTITHREADED options turned on.
     if options.generator:
         print "Makesystem generator %s: " % (options.generator)
         cmake_args.append(options.generator)
+        
+    print "!!!!!!!!!!!!!!!!!!!!!!!!!!"
 
     boost_status, errors = configureCMakeBoost( cmake_args )
 
