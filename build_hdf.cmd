@@ -11,12 +11,14 @@ python "%ALEMBIC_ROOT%\prefetch_thirdparty_libs.py"
 if /i "%1" == "db:" (
 	set DB=_db
 	set config=Debug
-	set cmake_flags=-D CMAKE_C_FLAGS_DEBUG="/D_DEBUG /MTd /Zi  /Ob0 /Od /RTC1" -D BUILD_SHARED_LIBS=OFF
+	set cmake_flags=-D CMAKE_C_FLAGS_DEBUG="/D_DEBUG /MDd /Zi  /Ob0 /Od /RTC1" -D BUILD_SHARED_LIBS=OFF
+	set targetLibDir=%ALEMBIC_ROOT%\lib64\Debug
 	shift
 ) ELSE (
 	set DB=
 	set config=RelWithDebInfo
-	set cmake_flags=-D CMAKE_C_FLAGS_RELWITHDEBINFO="/MT /Zi /O2 /Ob1 /D NDEBUG" -D BUILD_SHARED_LIBS=OFF
+	set cmake_flags=-D CMAKE_C_FLAGS_RELWITHDEBINFO="/MD /Zi /O2 /Ob1 /D NDEBUG" -D BUILD_SHARED_LIBS=OFF
+	set targetLibDir=%ALEMBIC_ROOT%\lib64\Release
 )
 
 if "%PROCESSOR_ARCHITECTURE%" == "AMD64" (
@@ -43,4 +45,10 @@ if NOT exist "%outDir%\include" (
 pushd %outDir%
 cmake -G %Generator% -D BUILD_SHARED_LIBS=OFF -D HDF5_BUILD_HL_LIB:BOOL=ON %cmake_flags% %ALEMBIC_ROOT%\thirdparty\hdf5-1.8.7
 vcbuild /nologo %1 %2 %3 %4 %5 %6 HDF5.sln "%config%|%arch%"
+
+if not exist %targetLibDir% md %targetLibDir%
+copy %outDir%\bin\%config%\*.lib %targetLibDir% /y
+copy %outDir%\bin\%config%\*.pdb %targetLibDir% /y
+copy %outDir%\bin\%config%\*.dll %targetLibDir% /y
+
 @popd

@@ -105,21 +105,6 @@ ELSE()
   ADD_DEFINITIONS( -DPLATFORM_LINUX -DPLATFORM=LINUX )
 ENDIF()
 
-if (MSVC AND DEFINED BUILD_STATIC_LIBS AND BUILD_STATIC_LIBS)
-	MESSAGE(STATUS "Replacing /MD with /MT for compiles" )
-	foreach (MODE "_DEBUG" "_MINSIZEREL" "_RELEASE" "_RELWITHDEBINFO")
-		string(REPLACE "/MD" "/MT" TMP "${CMAKE_C_FLAGS${MODE}}")
-		set(CMAKE_C_FLAGS${MODE} "${TMP}" CACHE STRING "" FORCE)
-		string(REPLACE "/MD" "/MT" TMP "${CMAKE_CXX_FLAGS${MODE}}")
-		set(CMAKE_CXX_FLAGS${MODE} "${TMP}" CACHE STRING "" FORCE)
-
-		#string(REPLACE "/MTd" "/MT" TMP "${CMAKE_C_FLAGS${MODE}}")
-		#set(CMAKE_C_FLAGS${MODE} "${TMP}" CACHE STRING "" FORCE)
-		#string(REPLACE "/MTd" "/MT" TMP "${CMAKE_CXX_FLAGS${MODE}}")
-		#set(CMAKE_CXX_FLAGS${MODE} "${TMP}" CACHE STRING "" FORCE)
-		endforeach (MODE)
-endif ()
-
 #-******************************************************************************
 #-******************************************************************************
 # INSTALLATION STUFF

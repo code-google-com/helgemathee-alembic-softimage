@@ -20,6 +20,8 @@ projects = [
 projectPath = os.path.join(thirdPartyFolder,'ilmbase-1.0.2','joined')
 if not os.path.exists(projectPath):
 	os.makedirs(projectPath)
+	os.makedirs(os.path.join(projectPath,'toFloat'))
+	os.makedirs(os.path.join(projectPath,'eLut'))
 
 	# has for which project to use
 	projectsUsed = {}
@@ -55,7 +57,14 @@ if not os.path.exists(projectPath):
 	# copy all sources
 	for i in range(0,len(sources)):
 		filename = os.path.split(sources[i])[1]
-		shutil.copyfile(sources[i],os.path.join(projectPath,filename))
+		if filename == "toFloat.cpp":
+			shutil.copyfile(sources[i],os.path.join(projectPath,'toFloat',filename))
+		elif filename == "eLut.cpp":
+			shutil.copyfile(sources[i],os.path.join(projectPath,'eLut',filename))
+		elif filename == "OptionParser.cpp":
+			continue
+		else:
+			shutil.copyfile(sources[i],os.path.join(projectPath,filename))
 		print("Copied source "+filename+" ...")
 	# copy the cmake file
 	shutil.copyfile(os.path.join(os.environ["ALEMBIC_ROOT"],"CMakeLists_ilmbase.txt"),os.path.join(projectPath,"CMakeLists.txt"))
