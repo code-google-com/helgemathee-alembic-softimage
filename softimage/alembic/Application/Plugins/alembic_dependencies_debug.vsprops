@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="alembic_dependencies_debug"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		AdditionalIncludeDirectories="$(ALEMBIC_ROOT)/thirdparty/boost_1_42_0;$(ALEMBIC_ROOT)/lib;$(ALEMBIC_OUT)/i64/hdf5/include;$(ALEMBIC_OUT)/i64/ilmbase/include"
+	/>
+	<Tool
+		Name="VCLinkerTool"
+		AdditionalDependencies="joined.lib hdf5d.lib hdf5_hld.lib zlibd.lib  AlembicAbc.lib AlembicAbcCoreAbstract.lib AlembicAbcCoreHDF5.lib AlembicAbcGeom.lib AlembicUtil.lib"
+		AdditionalLibraryDirectories="$(ALEMBIC_ROOT)/lib64/Debug"
+	/>
+</VisualStudioPropertySheet>
