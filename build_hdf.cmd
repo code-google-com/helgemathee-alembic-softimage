@@ -11,13 +11,13 @@ python "%ALEMBIC_ROOT%\prefetch_thirdparty_libs.py"
 if /i "%1" == "db:" (
 	set DB=_db
 	set config=Debug
-	set cmake_flags=-D CMAKE_C_FLAGS_DEBUG="/D_DEBUG /MDd /Zi  /Ob0 /Od /RTC1" -D BUILD_SHARED_LIBS=OFF
+	set cmake_flags=-D CMAKE_C_FLAGS_DEBUG="/D_DEBUG /MTd /Zi  /Ob0 /Od /RTC1" -D BUILD_SHARED_LIBS=OFF
 	set targetLibDir=%ALEMBIC_ROOT%\lib64\Debug
 	shift
 ) ELSE (
 	set DB=
 	set config=RelWithDebInfo
-	set cmake_flags=-D CMAKE_C_FLAGS_RELWITHDEBINFO="/MD /Zi /O2 /Ob1 /D NDEBUG" -D BUILD_SHARED_LIBS=OFF
+	set cmake_flags=-D CMAKE_C_FLAGS_RELWITHDEBINFO="/MT /Zi /O2 /Ob1 /D NDEBUG" -D BUILD_SHARED_LIBS=OFF
 	set targetLibDir=%ALEMBIC_ROOT%\lib64\Release
 )
 

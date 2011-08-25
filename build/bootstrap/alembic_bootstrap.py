@@ -932,8 +932,8 @@ def runCMake( opts, srcdir, ranBootstrap = False ):
             cmake_extra_args += ' -D CMAKE_CXX_FLAGS:STRING="%s"' % opts.cxxflags
 
 
-    cmake_cmd = 'cmake %s %s %s' % ( cmake_bootstrap_string, cmake_extra_args,
-                                     srcdir )
+    cmake_cmd = 'cmake %s %s -D CMAKE_CXX_FLAGS_%s="%s" -D CMAKE_CXX_FLAGS="%s" %s' %  ( cmake_bootstrap_string, cmake_extra_args,
+                                     os.environ['config'].upper(), os.environ['cmake_flags'], os.environ['cmake_flags'], srcdir )
 
     if ranBootstrap:
         # Run CMake twice to generate the correct build system files (this is an
