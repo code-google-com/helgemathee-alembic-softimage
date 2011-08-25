@@ -15,7 +15,7 @@ REM ****************************************************************************
 	set config=Debug
 	set linkFolderName=Debug
 	set boost_suffix=-sgd
-	set cmake_flags=/MTd
+	set cmake_flags=/MTd /D_DEBUG /EHsc /GR
 	set zlib_suffix=d
 	shift
 ) ELSE (
@@ -24,7 +24,7 @@ REM ****************************************************************************
 	set DB=
 	set boost_suffix=-s
 	set zlib_suffix=
-	set cmake_flags=/MT /U _DEBUG
+	set cmake_flags=/MT /U _DEBUG /EHsc /GR
 )
 
 python "%ALEMBIC_ROOT%\convert_ilmbase_vcprojs.py"
@@ -54,7 +54,7 @@ REM Corrections to vars in bootstrap script
 REM ******************************************************************************************
 set warnFlags=/wd4267 /wd4800 /wd4018 /wd4244 %cmake_flags%
 set ccflags=%warnFlags% /D_WINDOWS /W3 /Zm1000
-set cppflags=%ccflags% /EHsc /GR
+set cppflags=%ccflags%
 
 set BASE_ARGS=--disable-prman --disable-maya --generator=%Generator%
 rem set BASE_ARGS=--disable-prman --with-maya=%MAYA_ROOT% --generator=%Generator%
