@@ -18,3 +18,4 @@ references
 softimage/alembic/Application/Plugins/bin
 *.ncb
 *.suo
+lib64
