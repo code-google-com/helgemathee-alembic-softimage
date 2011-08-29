@@ -12,7 +12,6 @@ private:
     XSI::CRefArray mSelection;
     std::vector<double> mFrames;
     Alembic::Abc::OArchive mArchive;
-    Alembic::AbcCoreAbstract::TimeSamplingPtr mTime;
 public:
    AlembicWriteJob(
       const XSI::CString & in_FileName,
@@ -20,6 +19,10 @@ public:
       const XSI::CDoubleArray & in_Frames);
    ~AlembicWriteJob();
 
+   Alembic::Abc::OArchive * GetArchive() { return &mArchive; }
+   const std::vector<double> & GetFrames() { return mFrames; }
+   const XSI::CString & GetFileName() { return mFileName; }
+ 
    XSI::CStatus Process();
 };
 
