@@ -73,10 +73,9 @@ CStatus AlembicWriteJob::Process()
    frameRate = returnVal;
    if(frameRate == 0.0)
       frameRate = 25.0;
-   double timePerUnit = (mFrames[mFrames.size()-1] - mFrames[0]) / frameRate;
+   double timePerUnit = (mFrames[mFrames.size()-1] - mFrames[0]) + 0.001;
 
-   AbcA::TimeSamplingType samplingType(static_cast<Alembic::Util::uint32_t>(mFrames.size()),timePerUnit); 
-
+   AbcA::TimeSamplingType samplingType(static_cast<Alembic::Util::uint32_t>(mFrames.size()),timePerUnit);
    AbcA::TimeSampling sampling(samplingType,mFrames);
    
    /*
@@ -112,6 +111,8 @@ CStatus AlembicWriteJob::Process()
 
    for(size_t i=0;i<objects.size();i++)
       delete(objects[i]);
+
+   mArchive.reset();
 
    return CStatus::OK;
 }
