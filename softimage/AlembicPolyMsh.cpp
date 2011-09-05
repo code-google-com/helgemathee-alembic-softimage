@@ -82,7 +82,7 @@ XSI::CStatus AlembicPolyMesh::Save(double time)
          PolygonFace face(faces[i]);
          CLongArray indices = face.GetVertices().GetIndexArray();
          faceCountVec[i] = indices.GetCount();
-         for(LONG j=0;j<indices.GetCount();j++)
+         for(LONG j=indices.GetCount()-1;j>=0;j--)
             faceIndicesVec[offset++] = indices[j];
       }
       Alembic::Abc::Int32ArraySample faceCountSample(&faceCountVec.front(),faceCountVec.size());
@@ -146,7 +146,7 @@ XSIPLUGINCALLBACK CStatus alembic_polymesh_Update( CRef& in_ctxt )
 
    CString path = ctxt.GetParameterValue(L"path");
    CString identifier = ctxt.GetParameterValue(L"identifier");
-   int sampleIndex = int(ctxt.GetParameterValue(L"frame"))-1;
+   Alembic::AbcCoreAbstract::index_t sampleIndex = (Alembic::AbcCoreAbstract::index_t)int(ctxt.GetParameterValue(L"frame"))-1;
 
    Alembic::AbcGeom::IPolyMesh obj(getObjectFromArchive(path,identifier),Alembic::Abc::kWrapExisting);
    if(!obj.valid())
@@ -155,20 +155,17 @@ XSIPLUGINCALLBACK CStatus alembic_polymesh_Update( CRef& in_ctxt )
    // clamp the sample
    if(sampleIndex < 0)
       sampleIndex = 0;
-   else if(sampleIndex >= obj.getSchema().getNumSamples())
+   else if(sampleIndex >= (Alembic::AbcCoreAbstract::index_t)obj.getSchema().getNumSamples())
       sampleIndex = int(obj.getSchema().getNumSamples()) - 1;
-
-   //Alembic::Abc::TimeSamplingPtr ts = obj.getSchema().getTimeSampling();
-   //size_t numTimes = ts->getNumStoredTimes();
-   //double time = ts->getSampleTime(sampleIndex);
 
    Alembic::AbcGeom::IPolyMeshSchema::Sample sample;
    obj.getSchema().get(sample,sampleIndex);
 
-   PolygonMesh inMesh = Primitive((CRef)ctxt.GetInputValue(0));
+   PolygonMesh inMesh = Primitive((CRef)ctxt.GetInputValue(0)).GetGeometry();
    CVector3Array pos = inMesh.GetPoints().GetPositionArray();
 
    Alembic::Abc::P3fArraySamplePtr meshPos = sample.getPositions();
+
    if(pos.GetCount() != meshPos->size())
       return CStatus::OK;
 

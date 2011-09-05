@@ -252,9 +252,10 @@ SICALLBACK alembic_import_Execute( CRef& in_ctxt )
          for(size_t j=0;j<meshFaceCount->size();j++)
          {
             polies[offset1++] = (*meshFaceCount)[j];
+            offset2 += (*meshFaceCount)[j];
             for(size_t k=0;k<(*meshFaceCount)[j];k++)
             {
-               polies[offset1++] = (*meshFaceIndices)[(size_t)offset2++];
+               polies[offset1++] = (*meshFaceIndices)[(size_t)offset2 - 1 - k];
             }
          }
 
