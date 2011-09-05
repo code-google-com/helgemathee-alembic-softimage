@@ -25,17 +25,10 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#include <Alembic/Abc/All.h>
 #include <Alembic/AbcGeom/All.h>
-#include <Alembic/Abc/OArrayProperty.h>
-#include <Alembic/Abc/OScalarProperty.h>
-#include <Alembic/AbcGeom/OXform.h>
-#include <Alembic/AbcGeom/XformOp.h>
-#include <Alembic/AbcGeom/OPoints.h>
-#include <Alembic/AbcGeom/OPolyMesh.h>
-#include <Alembic/AbcGeom/OSubD.h>
-#include <Alembic/AbcGeom/ONuPatch.h>
-#include <Alembic/AbcGeom/OCurves.h>
-#include <Alembic/AbcGeom/OCamera.h>
 #include <Alembic/AbcCoreHDF5/All.h>
+
+#include "AlembicArchiveStorage.h"
 
 #endif  // _FOUNDATION_H_

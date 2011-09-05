@@ -1,7 +1,9 @@
-#include "AlembicCamera.h"
+#include "AlembicXform.h"
 #include <xsi_application.h>
+#include <xsi_kinematics.h>
+#include <xsi_kinematicstate.h>
 #include <xsi_x3dobject.h>
-#include <xsi_primitive.h>
+#include <xsi_math.h>
 #include <xsi_context.h>
 #include <xsi_operatorcontext.h>
 #include <xsi_customoperator.h>
@@ -9,7 +11,6 @@
 #include <xsi_parameter.h>
 #include <xsi_ppglayout.h>
 #include <xsi_ppgitem.h>
-#include <xsi_math.h>
 
 using namespace XSI;
 using namespace MATH;
@@ -17,30 +18,37 @@ using namespace MATH;
 namespace AbcA = ::Alembic::AbcCoreAbstract::ALEMBIC_VERSION_NS;
 using namespace AbcA;
 
-AlembicCamera::AlembicCamera(const XSI::CRef & in_Ref, AlembicWriteJob * in_Job, Alembic::Abc::OObject in_Parent)
+AlembicXform::AlembicXform(const XSI::CRef & in_Ref, AlembicWriteJob * in_Job, Alembic::Abc::OObject in_Parent)
 : AlembicObject(in_Ref, in_Job, in_Parent)
 {
-   Primitive prim(GetRef());
-   CString name(prim.GetParent3DObject().GetName()+L"Shape");
-   mObject = Alembic::AbcGeom::OCamera(GetParent(),name.GetAsciiString(),GetJob()->GetAnimatedTs());
+   KinematicState kineState(GetRef());
+   CString name(kineState.GetParent3DObject().GetName());
+   mObject = Alembic::AbcGeom::OXform(GetParent(),name.GetAsciiString(),GetJob()->GetAnimatedTs());
 }
 
-XSI::CStatus AlembicCamera::Save(double time)
+XSI::CStatus AlembicXform::Save(double time)
 {
-   // access the camera
-   Primitive prim(GetRef());
+   // access the transform
+   CTransformation global = KinematicState(GetRef()).GetTransform(time);
 
-   // store the camera data
-   Alembic::AbcGeom::CameraSample sample;
-   sample.setFocalLength(prim.GetParameterValue(L"projplanedist",time));
+   Alembic::AbcGeom::XformSample sample;
 
-   // save the samples
+   // store the transform
+   CVector3 trans = global.GetTranslation();
+   CVector3 axis;
+   double angle = global.GetRotationAxisAngle(axis);
+   CVector3 scale = global.GetScaling();
+   sample.setTranslation(Imath::V3d(trans.GetX(),trans.GetY(),trans.GetZ()));
+   sample.setRotation(Imath::V3d(axis.GetX(),axis.GetY(),axis.GetZ()),RadiansToDegrees(angle));
+   sample.setScale(Imath::V3d(scale.GetX(),scale.GetY(),scale.GetZ()));
+
+   // save the sample
    mObject.getSchema().set(sample);
 
    return CStatus::OK;
 }
 
-XSIPLUGINCALLBACK CStatus alembic_camera_Define( CRef& in_ctxt )
+XSIPLUGINCALLBACK CStatus alembic_xform_Define( CRef& in_ctxt )
 {
    Context ctxt( in_ctxt );
    CustomOperator oCustomOperator;
@@ -65,7 +73,7 @@ XSIPLUGINCALLBACK CStatus alembic_camera_Define( CRef& in_ctxt )
 
 }
 
-XSIPLUGINCALLBACK CStatus alembic_camera_DefineLayout( CRef& in_ctxt )
+XSIPLUGINCALLBACK CStatus alembic_xform_DefineLayout( CRef& in_ctxt )
 {
    Context ctxt( in_ctxt );
    PPGLayout oLayout;
@@ -76,7 +84,7 @@ XSIPLUGINCALLBACK CStatus alembic_camera_DefineLayout( CRef& in_ctxt )
 }
 
 
-XSIPLUGINCALLBACK CStatus alembic_camera_Update( CRef& in_ctxt )
+XSIPLUGINCALLBACK CStatus alembic_xform_Update( CRef& in_ctxt )
 {
    OperatorContext ctxt( in_ctxt );
 
@@ -84,7 +92,7 @@ XSIPLUGINCALLBACK CStatus alembic_camera_Update( CRef& in_ctxt )
    CString identifier = ctxt.GetParameterValue(L"identifier");
    int sampleIndex = int(ctxt.GetParameterValue(L"frame"))-1;
 
-   Alembic::AbcGeom::ICamera obj(getObjectFromArchive(path,identifier),Alembic::Abc::kWrapExisting);
+   Alembic::AbcGeom::IXform obj(getObjectFromArchive(path,identifier),Alembic::Abc::kWrapExisting);
    if(!obj.valid())
       return CStatus::OK;
 
@@ -94,11 +102,18 @@ XSIPLUGINCALLBACK CStatus alembic_camera_Update( CRef& in_ctxt )
    else if(sampleIndex >= obj.getSchema().getNumSamples())
       sampleIndex = int(obj.getSchema().getNumSamples()) - 1;
 
-   Alembic::AbcGeom::CameraSample sample;
+   Alembic::AbcGeom::XformSample sample;
    obj.getSchema().get(sample,sampleIndex);
 
-   Primitive prim(ctxt.GetOutputTarget());
-   prim.PutParameterValue(L"projplanedist",sample.getFocalLength());
+   CTransformation transform;
+   transform.SetTranslationFromValues(sample.getTranslation().x,sample.getTranslation().y,sample.getTranslation().z);
+   transform.SetRotationFromAxisAngle(
+      CVector3(sample.getAxis().x,sample.getAxis().y,sample.getAxis().z),DegreesToRadians(sample.getAngle()));
+   transform.SetScalingFromValues(sample.getScale().x,sample.getScale().y,sample.getScale().z);
+
+   KinematicState state(ctxt.GetOutputTarget());
+   state.PutTransform(transform);
 
    return CStatus::OK;
 }
+

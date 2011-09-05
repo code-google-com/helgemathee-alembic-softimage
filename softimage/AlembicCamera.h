@@ -3,14 +3,16 @@
 
 #include "AlembicObject.h"
 
-class AlembicCamera : public AlembicObject
+class AlembicCamera: public AlembicObject
 {
+private:
+   Alembic::AbcGeom::OCamera mObject;
 public:
 
-   AlembicCamera(const XSI::CRef & in_Ref, AlembicWriteJob * in_Job) :
-      AlembicObject(in_Ref, in_Job) {};
+   AlembicCamera(const XSI::CRef & in_Ref, AlembicWriteJob * in_Job, Alembic::Abc::OObject in_Parent = Alembic::Abc::OObject());
 
-   virtual XSI::CStatus Save(unsigned int frame);
+   virtual const Alembic::Abc::OObject & GetObject() { return mObject; }
+   virtual XSI::CStatus Save(double time);
 };
 
 #endif
