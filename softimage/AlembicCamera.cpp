@@ -82,7 +82,7 @@ XSIPLUGINCALLBACK CStatus alembic_camera_Update( CRef& in_ctxt )
 
    CString path = ctxt.GetParameterValue(L"path");
    CString identifier = ctxt.GetParameterValue(L"identifier");
-   int sampleIndex = int(ctxt.GetParameterValue(L"frame"))-1;
+   Alembic::AbcCoreAbstract::index_t sampleIndex = (Alembic::AbcCoreAbstract::index_t)int(ctxt.GetParameterValue(L"frame"))-1;
 
    Alembic::AbcGeom::ICamera obj(getObjectFromArchive(path,identifier),Alembic::Abc::kWrapExisting);
    if(!obj.valid())
@@ -91,7 +91,7 @@ XSIPLUGINCALLBACK CStatus alembic_camera_Update( CRef& in_ctxt )
    // clamp the sample
    if(sampleIndex < 0)
       sampleIndex = 0;
-   else if(sampleIndex >= obj.getSchema().getNumSamples())
+   else if(sampleIndex >= (Alembic::AbcCoreAbstract::index_t)obj.getSchema().getNumSamples())
       sampleIndex = int(obj.getSchema().getNumSamples()) - 1;
 
    Alembic::AbcGeom::CameraSample sample;
