@@ -11,7 +11,8 @@ private:
     XSI::CString mFileName;
     XSI::CRefArray mSelection;
     std::vector<double> mFrames;
-    Alembic::Abc::OArchive mArchive;
+    Alembic::Abc::OArchive * mArchive;
+    unsigned int mTs;
 public:
    AlembicWriteJob(
       const XSI::CString & in_FileName,
@@ -19,9 +20,10 @@ public:
       const XSI::CDoubleArray & in_Frames);
    ~AlembicWriteJob();
 
-   Alembic::Abc::OArchive * GetArchive() { return &mArchive; }
+   Alembic::Abc::OArchive * GetArchive() { return mArchive; }
    const std::vector<double> & GetFrames() { return mFrames; }
    const XSI::CString & GetFileName() { return mFileName; }
+   unsigned int GetAnimatedTs() { return mTs; }
  
    XSI::CStatus Process();
 };

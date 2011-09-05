@@ -46,6 +46,11 @@ if not os.path.exists(os.path.join(thirdPartyFolder,"boost_1_42_0.tar.gz")):
 if not os.path.exists(os.path.join(thirdPartyFolder,"hdf5-1.8.7.tar")):
 	download("http://www.hdfgroup.org/ftp/HDF5/prev-releases/hdf5-1.8.7/src/hdf5-1.8.7.tar", os.path.join(thirdPartyFolder,"hdf5-1.8.7.tar"))
 
+# check if we need to download Pthreads
+if not os.path.exists(os.path.join(thirdPartyFolder,"pthreads-w32-2-8-0-release.exe")):
+	download("http://mirrors.kernel.org/sources.redhat.com/pthreads-win32/pthreads-w32-2-8-0-release.exe", os.path.join(thirdPartyFolder,"pthreads-w32-2-8-0-release.exe"))
+	download("http://stahlworks.com/dev/unzip.exe", os.path.join(thirdPartyFolder,"unzip.exe"))
+
 # check if we need to download ilmbase
 if not os.path.exists(os.path.join(thirdPartyFolder,"ilmbase-1.0.2.tar.gz")):
 	download("http://mirrors.zerg.biz/nongnu/openexr/ilmbase-1.0.2.tar.gz", os.path.join(thirdPartyFolder,"ilmbase-1.0.2.tar.gz"))
@@ -53,7 +58,7 @@ if not os.path.exists(os.path.join(thirdPartyFolder,"ilmbase-1.0.2.tar.gz")):
 # check if we need to download zlib
 if not os.path.exists(os.path.join(thirdPartyFolder,"zlib-1.2.5.tar.gz")):
 	download("http://zlib.net/zlib-1.2.5.tar.gz", os.path.join(thirdPartyFolder,"zlib-1.2.5.tar.gz"))
-
+	
 # check if we need to extract boost
 if not os.path.exists(os.path.join(thirdPartyFolder,"boost_1_42_0")):
 	tar = tarfile.open(os.path.join(thirdPartyFolder,"boost_1_42_0.tar.gz"),'r:gz')
@@ -65,6 +70,10 @@ if not os.path.exists(os.path.join(thirdPartyFolder,"hdf5-1.8.7")):
 	tar = tarfile.open(os.path.join(thirdPartyFolder,"hdf5-1.8.7.tar"))
 	print("Extracting hdf5, this may take a couple of minutes...")
 	tar.extractall(thirdPartyFolder)
+	
+# also now extract pthread
+if not os.path.exists(os.path.join(thirdPartyFolder,"pthreads-w32-2-8-0-release")):
+	os.system(os.path.join(thirdPartyFolder,"unzip")+" "+os.path.join(thirdPartyFolder,"pthreads-w32-2-8-0-release.exe")+" -d "+os.path.join(thirdPartyFolder,"pthreads-w32-2-8-0-release"))
 
 # check if we need to extract ilmbase
 if not os.path.exists(os.path.join(thirdPartyFolder,"ilmbase-1.0.2")):

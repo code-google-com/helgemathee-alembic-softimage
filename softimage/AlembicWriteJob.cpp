@@ -1,6 +1,8 @@
 #include "AlembicWriteJob.h"
 #include "AlembicObject.h"
+#include "AlembicXform.h"
 #include "AlembicCamera.h"
+#include "AlembicPolyMsh.h"
 
 #include <xsi_application.h>
 #include <xsi_time.h>
@@ -8,6 +10,10 @@
 #include <xsi_scene.h>
 #include <xsi_property.h>
 #include <xsi_parameter.h>
+#include <xsi_x3dobject.h>
+#include <xsi_primitive.h>
+#include <xsi_kinematics.h>
+#include <xsi_kinematicstate.h>
 
 using namespace XSI;
 using namespace MATH;
@@ -22,6 +28,7 @@ AlembicWriteJob::AlembicWriteJob
    const CDoubleArray & in_Frames
 )
 {
+   mArchive = NULL;
    mFileName = in_FileName;
    mSelection = in_Selection;
 
@@ -31,6 +38,8 @@ AlembicWriteJob::AlembicWriteJob
 
 AlembicWriteJob::~AlembicWriteJob()
 {
+   if(mArchive != NULL)
+      delete(mArchive);
 }
 
 CStatus AlembicWriteJob::Process()
@@ -57,12 +66,12 @@ CStatus AlembicWriteJob::Process()
    }
 
    // init archive
-   mArchive = CreateArchiveWithInfo(
+   mArchive = new Alembic::Abc::OArchive(CreateArchiveWithInfo(
       Alembic::AbcCoreHDF5::WriteArchive(),
       mFileName.GetAsciiString(),
       "Softimage Alembic Plugin",
       "Fabric Engine User",
-      Alembic::Abc::ErrorHandler::kThrowPolicy);
+      Alembic::Abc::ErrorHandler::kThrowPolicy));
 
    // get the frame rate
    double frameRate = 25.0;
@@ -73,37 +82,34 @@ CStatus AlembicWriteJob::Process()
    frameRate = returnVal;
    if(frameRate == 0.0)
       frameRate = 25.0;
-   double timePerUnit = (mFrames[mFrames.size()-1] - mFrames[0]) + 0.001;
+   double timePerSample = 1.0 / frameRate;
 
-   AbcA::TimeSamplingType samplingType(static_cast<Alembic::Util::uint32_t>(mFrames.size()),timePerUnit);
-   AbcA::TimeSampling sampling(samplingType,mFrames);
-   
-   /*
-      AbcA::TimeSamplingType(
-         static_cast<Alembic::Util::uint32_t>(mFrames.size()),
-         timePerUnit
-      ), 
-      mFrames
-   ));
-   */
-
-   mArchive.addTimeSampling(sampling);
-   Alembic::Abc::OBox3dProperty box =  Alembic::AbcGeom::CreateOArchiveBounds(mArchive,0);
+   // create the sampling
+   AbcA::TimeSampling sampling(timePerSample,0.0);
+   mTs = mArchive->addTimeSampling(sampling);
 
    // create object for each
    std::vector<AlembicObject*> objects;
    for(LONG i=0;i<mSelection.GetCount();i++)
    {
-      SIObject obj(mSelection[i]);
-      if(obj.GetType().IsEqualNoCase(L"camera"))
-         objects.push_back(new AlembicCamera(obj.GetRef(),this));
+      X3DObject xObj(mSelection[i]);
+      if(xObj.GetType().IsEqualNoCase(L"camera"))
+      {
+         objects.push_back(new AlembicXform(xObj.GetKinematics().GetGlobal().GetRef(),this));
+         objects.push_back(new AlembicCamera(xObj.GetActivePrimitive().GetRef(),this,objects.back()->GetObject()));
+      }
+      else if(xObj.GetType().IsEqualNoCase(L"polymsh"))
+      {
+         objects.push_back(new AlembicXform(xObj.GetKinematics().GetGlobal().GetRef(),this));
+         objects.push_back(new AlembicPolyMesh(xObj.GetActivePrimitive().GetRef(),this,objects.back()->GetObject()));
+      }
    }
 
    for(unsigned int frame=0; frame < (unsigned int)mFrames.size(); frame++)
    {
       for(size_t i=0;i<objects.size();i++)
       {
-         CStatus status = objects[i]->Save(frame);
+         CStatus status = objects[i]->Save(mFrames[frame]);
          if(status != CStatus::OK)
             return status; 
       }
@@ -111,8 +117,6 @@ CStatus AlembicWriteJob::Process()
 
    for(size_t i=0;i<objects.size();i++)
       delete(objects[i]);
-
-   mArchive.reset();
 
    return CStatus::OK;
 }
