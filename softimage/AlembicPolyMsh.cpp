@@ -80,7 +80,7 @@ XSI::CStatus AlembicPolyMesh::Save(double time)
 
    // allocate for the points and normals
    Alembic::Abc::P3fArraySample posSample(&posVec.front(),posVec.size());
-   Alembic::AbcGeom::ON3fGeomParam::Sample normalSample(Alembic::Abc::N3fArraySample(&normalVec.front(),normalVec.size()),Alembic::AbcGeom::kFacevaryingScope);
+   //Alembic::AbcGeom::ON3fGeomParam::Sample normalSample(Alembic::Abc::N3fArraySample(&normalVec.front(),normalVec.size()),Alembic::AbcGeom::kFacevaryingScope);
 
    // if we are the first frame!
    if(mNumSamples == 0)
@@ -106,18 +106,21 @@ XSI::CStatus AlembicPolyMesh::Save(double time)
       Alembic::Abc::Int32ArraySample faceIndicesSample(&faceIndicesVec.front(),faceIndicesVec.size());
 
       mMeshSample.setPositions(posSample);
-      mMeshSample.setNormals(normalSample);
-      mMeshSample.setFaceIndices(faceIndicesSample);
+      //mMeshSample.setNormals(normalSample);
       mMeshSample.setFaceCounts(faceCountSample);
+      mMeshSample.setFaceIndices(faceIndicesSample);
 
       // also check if we need to store UV
+
+
+      mMeshSchema.set(mMeshSample);
    }
    else
    {
       mMeshSample.setPositions(posSample);
-      mMeshSample.setNormals(normalSample);
+      mMeshSchema.set(mMeshSample);
+      //mMeshSample.setNormals(normalSample);
    }
-   mMeshSchema.set(mMeshSample);
    mNumSamples++;
 
    return CStatus::OK;
