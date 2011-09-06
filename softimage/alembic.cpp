@@ -77,6 +77,9 @@ SICALLBACK alembic_export_Init( CRef& in_ctxt )
 	oArgs.Add(L"frameIn",1.0);
 	oArgs.Add(L"frameOut",100.0);
 	oArgs.Add(L"frameStep",1.0);
+	oArgs.Add(L"exportNormals",false);
+	oArgs.Add(L"vertexNormals",true);
+	oArgs.Add(L"exportUVs",false);
 	return CStatus::OK;
 }
 
@@ -134,8 +137,15 @@ SICALLBACK alembic_export_Execute( CRef& in_ctxt )
       frames.Add(frame);
    Application().LogMessage(L"[alembic] frames used: "+CValue(frameIn).GetAsText()+L" to "+CValue(frameOut).GetAsText()+L", step "+CValue(frameStep).GetAsText());
 
-   // run the job
+   // create the job
    AlembicWriteJob job(filename,objects,frames);
+
+   // check the options 
+   job.SetOption(L"exportNormals",(bool)args[5]);
+   job.SetOption(L"vertexNormals",(bool)args[6]);
+   job.SetOption(L"exportUVs",(bool)args[7]);
+
+   // run the job
 	return job.Process();
 }
 
@@ -318,7 +328,7 @@ SICALLBACK alembic_import_Execute( CRef& in_ctxt )
          if(meshNormalsParam.valid())
          {
             Alembic::Abc::N3fArraySamplePtr meshNormals = meshNormalsParam.getExpandedValue(0).getVals();
-            if(meshNormals->size() > 0)
+            if(meshNormals->size() > meshPos->size()) // don't do this for vertex normals
             {
                // create user normals
                CValueArray createUserNormalArgs(1);

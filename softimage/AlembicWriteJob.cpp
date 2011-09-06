@@ -39,6 +39,29 @@ AlembicWriteJob::~AlembicWriteJob()
 {
 }
 
+void AlembicWriteJob::SetOption(const CString & in_Name, const CValue & in_Value)
+{
+   std::map<XSI::CString,XSI::CValue>::iterator it = mOptions.find(in_Name);
+   if(it == mOptions.end())
+      mOptions.insert(std::pair<XSI::CString,XSI::CValue>(in_Name,in_Value));
+   else
+      it->second = in_Value;
+}
+
+bool AlembicWriteJob::HasOption(const CString & in_Name)
+{
+   std::map<XSI::CString,XSI::CValue>::iterator it = mOptions.find(in_Name);
+   return it != mOptions.end();
+}
+
+CValue AlembicWriteJob::GetOption(const CString & in_Name)
+{
+   std::map<XSI::CString,XSI::CValue>::iterator it = mOptions.find(in_Name);
+   if(it != mOptions.end())
+      return it->second;
+   return CValue(false);
+}
+
 CStatus AlembicWriteJob::Process()
 {
    // check filenames

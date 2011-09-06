@@ -51,7 +51,6 @@ XSI::CStatus AlembicPolyMesh::Save(double time)
    // access the mesh
    PolygonMesh mesh = prim.GetGeometry(time);
    CVector3Array pos = mesh.GetVertices().GetPositionArray();
-   CVector3Array normals = mesh.GetVertices().GetNormalArray();
    CPolygonFaceRefArray faces = mesh.GetPolygons();
    LONG vertCount = pos.GetCount();
    LONG faceCount = faces.GetCount();
@@ -67,27 +66,44 @@ XSI::CStatus AlembicPolyMesh::Save(double time)
    }
 
    LONG offset = 0;
-   std::vector<Alembic::Abc::N3f> normalVec(sampleCount);
-   for(LONG i=0;i<faceCount;i++)
+   std::vector<Alembic::Abc::N3f> normalVec;;
+   if((bool)GetJob()->GetOption(L"exportNormals"))
    {
-      PolygonFace face(faces[i]);
-      CLongArray normalIndices = face.GetVertices().GetIndexArray();
-      for(LONG j=0;j<normalIndices.GetCount();j++)
+      CVector3Array normals = mesh.GetVertices().GetNormalArray();
+      if((bool)GetJob()->GetOption(L"vertexNormals"))
       {
-         normalVec[offset].x = (float)normals[normalIndices[j]].GetX();
-         normalVec[offset].y = (float)normals[normalIndices[j]].GetY();
-         normalVec[offset++].z = (float)normals[normalIndices[j]].GetZ();
+         normalVec.resize(vertCount);
+         for(LONG i=0;i<vertCount;i++)
+         {
+            normalVec[i].x = (float)normals[i].GetX();
+            normalVec[i].y = (float)normals[i].GetY();
+            normalVec[i].z = (float)normals[i].GetZ();
+         }
+      }
+      else
+      {
+         normalVec.resize(sampleCount);
+         for(LONG i=0;i<faceCount;i++)
+         {
+            PolygonFace face(faces[i]);
+            CLongArray normalIndices = face.GetVertices().GetIndexArray();
+            for(LONG j=0;j<normalIndices.GetCount();j++)
+            {
+               normalVec[offset].x = (float)normals[normalIndices[j]].GetX();
+               normalVec[offset].y = (float)normals[normalIndices[j]].GetY();
+               normalVec[offset++].z = (float)normals[normalIndices[j]].GetZ();
 
 #ifdef _DEBUG
-         if(i==0 && j==0 && mNumSamples == 0)
-            Application().LogMessage(L"first normal: "+CString(normals[normalIndices[j]].GetX())+L" : "+CString(normals[normalIndices[j]].GetY())+L" : "+CString(normals[normalIndices[j]].GetZ()));
+               if(i==0 && j==0 && mNumSamples == 0)
+                  Application().LogMessage(L"first normal: "+CString(normals[normalIndices[j]].GetX())+L" : "+CString(normals[normalIndices[j]].GetY())+L" : "+CString(normals[normalIndices[j]].GetZ()));
 #endif
+            }
+         }
       }
    }
 
    // allocate for the points and normals
    Alembic::Abc::P3fArraySample posSample(&posVec.front(),posVec.size());
-   Alembic::AbcGeom::ON3fGeomParam::Sample normalSample(Alembic::Abc::N3fArraySample(&normalVec.front(),normalVec.size()),Alembic::AbcGeom::kFacevaryingScope);
 
    // if we are the first frame!
    if(mNumSamples == 0)
@@ -113,48 +129,55 @@ XSI::CStatus AlembicPolyMesh::Save(double time)
       Alembic::Abc::Int32ArraySample faceIndicesSample(&faceIndicesVec.front(),faceIndicesVec.size());
 
       mMeshSample.setPositions(posSample);
-      mMeshSample.setNormals(normalSample);
+      if(normalVec.size() > 0)
+      {
+         Alembic::AbcGeom::ON3fGeomParam::Sample normalSample(Alembic::Abc::N3fArraySample(&normalVec.front(),normalVec.size()),Alembic::AbcGeom::kFacevaryingScope);
+         mMeshSample.setNormals(normalSample);
+      }
       mMeshSample.setFaceCounts(faceCountSample);
       mMeshSample.setFaceIndices(faceIndicesSample);
 
       // also check if we need to store UV
-      CRefArray clusters = mesh.GetClusters();
-      CRef uvPropRef;
-      for(LONG i=0;i<clusters.GetCount();i++)
+      if((bool)GetJob()->GetOption(L"exportUVs"))
       {
-         Cluster cluster(clusters[i]);
-         if(!cluster.GetType().IsEqualNoCase(L"sample"))
-            continue;
-         CRefArray props(cluster.GetLocalProperties());
-         for(LONG k=0;k<props.GetCount();k++)
+         CRefArray clusters = mesh.GetClusters();
+         CRef uvPropRef;
+         for(LONG i=0;i<clusters.GetCount();i++)
          {
-            ClusterProperty prop(props[k]);
-            if(prop.GetType().IsEqualNoCase(L"uvspace"))
+            Cluster cluster(clusters[i]);
+            if(!cluster.GetType().IsEqualNoCase(L"sample"))
+               continue;
+            CRefArray props(cluster.GetLocalProperties());
+            for(LONG k=0;k<props.GetCount();k++)
             {
-               uvPropRef = props[k];
-               break;
+               ClusterProperty prop(props[k]);
+               if(prop.GetType().IsEqualNoCase(L"uvspace"))
+               {
+                  uvPropRef = props[k];
+                  break;
+               }
             }
+            if(uvPropRef.IsValid())
+               break;
          }
          if(uvPropRef.IsValid())
-            break;
-      }
-      if(uvPropRef.IsValid())
-      {
-         // ok, great, we found UVs, let's set them up
-         CDoubleArray uvValues = ClusterProperty(uvPropRef).GetElements().GetArray();
-         std::vector<Alembic::Abc::V2f> uvVec(sampleCount);
-         LONG offset = 0;
-         for(LONG i=0;i<sampleCount;i++,offset+=3)
          {
-            uvVec[i].x = (float)uvValues[offset];
-            uvVec[i].y = (float)uvValues[offset+1];
+            // ok, great, we found UVs, let's set them up
+            CDoubleArray uvValues = ClusterProperty(uvPropRef).GetElements().GetArray();
+            std::vector<Alembic::Abc::V2f> uvVec(sampleCount);
+            LONG offset = 0;
+            for(LONG i=0;i<sampleCount;i++,offset+=3)
+            {
+               uvVec[i].x = (float)uvValues[offset];
+               uvVec[i].y = (float)uvValues[offset+1];
 #ifdef _DEBUG
-            if(i==0)
-               Application().LogMessage(L"first uvs: "+CString(uvVec[i].x)+L" : "+CString(uvVec[i].y));
+               if(i==0)
+                  Application().LogMessage(L"first uvs: "+CString(uvVec[i].x)+L" : "+CString(uvVec[i].y));
 #endif
+            }
+            Alembic::AbcGeom::OV2fGeomParam::Sample uvSample(Alembic::Abc::V2fArraySample(&uvVec.front(),uvVec.size()),Alembic::AbcGeom::kFacevaryingScope);
+            mMeshSample.setUVs(uvSample);
          }
-         Alembic::AbcGeom::OV2fGeomParam::Sample uvSample(Alembic::Abc::V2fArraySample(&uvVec.front(),uvVec.size()),Alembic::AbcGeom::kFacevaryingScope);
-         mMeshSample.setUVs(uvSample);
       }
 
       mMeshSchema.set(mMeshSample);
@@ -162,7 +185,11 @@ XSI::CStatus AlembicPolyMesh::Save(double time)
    else
    {
       mMeshSample.setPositions(posSample);
-      mMeshSample.setNormals(normalSample);
+      if(normalVec.size() > 0)
+      {
+         Alembic::AbcGeom::ON3fGeomParam::Sample normalSample(Alembic::Abc::N3fArraySample(&normalVec.front(),normalVec.size()),Alembic::AbcGeom::kFacevaryingScope);
+         mMeshSample.setNormals(normalSample);
+      }
       mMeshSchema.set(mMeshSample);
    }
    mNumSamples++;
