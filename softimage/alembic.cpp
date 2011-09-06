@@ -23,6 +23,10 @@
 #include <xsi_factory.h>
 #include <xsi_primitive.h>
 #include <xsi_math.h>
+#include <xsi_cluster.h>
+#include <xsi_clusterproperty.h>
+#include <xsi_primitive.h>
+#include <xsi_geometry.h>
 
 using namespace XSI; 
 using namespace MATH; 
@@ -39,6 +43,7 @@ SICALLBACK XSILoadPlugin( PluginRegistrar& in_reg )
 	in_reg.RegisterOperator(L"alembic_xform");
 	in_reg.RegisterOperator(L"alembic_camera");
 	in_reg.RegisterOperator(L"alembic_polymesh");
+	in_reg.RegisterOperator(L"alembic_normals");
 	in_reg.RegisterMenu(siMenuMainFileExportID,L"alembic_MenuExport",false,false);
 	in_reg.RegisterMenu(siMenuMainFileImportID,L"alembic_MenuImport",false,false);
 	//RegistrationInsertionPoint - do not remove this line
@@ -181,6 +186,11 @@ SICALLBACK alembic_import_Execute( CRef& in_ctxt )
    // let's try to read this
    Alembic::Abc::IArchive * archive = new Alembic::Abc::IArchive( Alembic::AbcCoreHDF5::ReadArchive(), filename.GetAsciiString() );
 
+   // prepare values for the setexpr command
+   CValueArray setExprArgs(2);
+   CValue setExprReturn;
+   setExprArgs[1] = L"fc";
+
    // let's figure out which objects we have
    CRefArray ops;
    std::vector<Alembic::Abc::IObject> objects;
@@ -215,6 +225,8 @@ SICALLBACK alembic_import_Execute( CRef& in_ctxt )
             ops.Add(op.GetRef());
             op.PutParameterValue(L"path",filename);
             op.PutParameterValue(L"identifier",CString(parent.getFullName().c_str()));
+            setExprArgs[0] = op.GetFullName()+L".frame";
+            Application().ExecuteCommand(L"SetExpr",setExprArgs,setExprReturn);
          }
          
          // let's setup the camera op
@@ -225,6 +237,8 @@ SICALLBACK alembic_import_Execute( CRef& in_ctxt )
          ops.Add(op.GetRef());
          op.PutParameterValue(L"path",filename);
          op.PutParameterValue(L"identifier",CString(objects[i].getFullName().c_str()));
+         setExprArgs[0] = op.GetFullName()+L".frame";
+         Application().ExecuteCommand(L"SetExpr",setExprArgs,setExprReturn);
       }
       else if(Alembic::AbcGeom::IPolyMesh::matches(objects[i].getMetaData()))
       {
@@ -236,8 +250,7 @@ SICALLBACK alembic_import_Execute( CRef& in_ctxt )
          // let's create a mesh
          Alembic::AbcGeom::IPolyMesh meshIObject(objects[i],Alembic::Abc::kWrapExisting);
          Alembic::AbcGeom::IPolyMeshSchema meshSchema = meshIObject.getSchema();
-         Alembic::AbcGeom::IPolyMeshSchema::Sample meshSample;
-         meshSchema.get(meshSample);
+         Alembic::AbcGeom::IPolyMeshSchema::Sample meshSample = meshSchema.getValue();
 
          // prepare the mesh
          Alembic::Abc::P3fArraySamplePtr meshPos = meshSample.getPositions();
@@ -247,15 +260,27 @@ SICALLBACK alembic_import_Execute( CRef& in_ctxt )
          CVector3Array pos((LONG)meshPos->size());
          CLongArray polies((LONG)(meshFaceCount->size() + meshFaceIndices->size()));
          for(size_t j=0;j<meshPos->size();j++)
-            pos[(LONG)j].Set((*meshPos)[j].x,(*meshPos)[j].y,(*meshPos)[j].z);
-         LONG offset1 = 0, offset2 = 0;
+         {
+            pos[(LONG)j].Set(meshPos->get()[j].x,meshPos->get()[j].y,meshPos->get()[j].z);
+#ifdef _DEBUG
+            if(j == 0)
+               Application().LogMessage(L"first pos: "+CString(pos[(LONG)j].GetX())+L" : "+CString(pos[(LONG)j].GetY())+L" : "+CString(pos[(LONG)j].GetZ()));
+#endif
+         }
+         LONG offset1 = 0;
+         Alembic::Abc::int32_t offset2 = 0;
+#ifdef _DEBUG
+         LONG meshFaceCountLong = (LONG)meshFaceCount->size();
+         LONG meshFaceIndicesLong = (LONG)meshFaceIndices->size();
+#endif
          for(size_t j=0;j<meshFaceCount->size();j++)
          {
-            polies[offset1++] = (*meshFaceCount)[j];
-            offset2 += (*meshFaceCount)[j];
-            for(size_t k=0;k<(*meshFaceCount)[j];k++)
+            Alembic::Abc::int32_t singleFaceCount = meshFaceCount->get()[j];
+            polies[offset1++] = singleFaceCount;
+            offset2 += singleFaceCount;
+            for(size_t k=0;k<singleFaceCount;k++)
             {
-               polies[offset1++] = (*meshFaceIndices)[(size_t)offset2 - 1 - k];
+               polies[offset1++] = meshFaceIndices->get()[(size_t)offset2 - 1 - k];
             }
          }
 
@@ -272,9 +297,11 @@ SICALLBACK alembic_import_Execute( CRef& in_ctxt )
             ops.Add(op.GetRef());
             op.PutParameterValue(L"path",filename);
             op.PutParameterValue(L"identifier",CString(parent.getFullName().c_str()));
+            setExprArgs[0] = op.GetFullName()+L".frame";
+            Application().ExecuteCommand(L"SetExpr",setExprArgs,setExprReturn);
          }
          
-         // let's setup the camera op
+         // let's setup the positions op
          CustomOperator op = Application().GetFactory().CreateObject(L"alembic_polymesh");
          op.AddOutputPort(meshObj.GetActivePrimitive().GetRef());
          op.AddInputPort(meshObj.GetActivePrimitive().GetRef());
@@ -282,6 +309,55 @@ SICALLBACK alembic_import_Execute( CRef& in_ctxt )
          ops.Add(op.GetRef());
          op.PutParameterValue(L"path",filename);
          op.PutParameterValue(L"identifier",CString(objects[i].getFullName().c_str()));
+         setExprArgs[0] = op.GetFullName()+L".frame";
+         Application().ExecuteCommand(L"SetExpr",setExprArgs,setExprReturn);
+
+         // let's setup the normals op
+         Alembic::AbcGeom::IN3fGeomParam meshNormalsParam = meshSchema.getNormalsParam();
+         if(meshNormalsParam.valid())
+         {
+            Alembic::Abc::N3fArraySamplePtr meshNormals = meshNormalsParam.getExpandedValue(0).getVals();
+            if(meshNormals->size() > 0)
+            {
+               // create user normals
+               CValueArray createUserNormalArgs(1);
+               createUserNormalArgs[0] = meshObj.GetFullName();
+               Application().ExecuteCommand(L"CreateUserNormals",createUserNormalArgs,setExprReturn);
+               ClusterProperty userNormalProp;
+               CRefArray clusters = meshObj.GetActivePrimitive().GetGeometry().GetClusters();
+               for(LONG j=0;j<clusters.GetCount();j++)
+               {
+                  Cluster cluster(clusters[j]);
+                  if(!cluster.GetType().IsEqualNoCase(L"sample"))
+                     continue;
+                  CRefArray props(cluster.GetLocalProperties());
+                  for(LONG k=0;k<props.GetCount();k++)
+                  {
+                     ClusterProperty prop(props[k]);
+                     if(prop.GetType().IsEqualNoCase(L"normal"))
+                     {
+                        userNormalProp = props[k];
+                        break;
+                     }
+                  }
+                  if(userNormalProp.IsValid())
+                     break;
+               }
+               if(userNormalProp.IsValid())
+               {
+                  // we found it, and we need to attach the op
+                  CustomOperator op = Application().GetFactory().CreateObject(L"alembic_normals");
+                  op.AddOutputPort(userNormalProp.GetRef());
+                  op.AddInputPort(userNormalProp.GetRef());
+                  op.Connect();
+                  ops.Add(op.GetRef());
+                  op.PutParameterValue(L"path",filename);
+                  op.PutParameterValue(L"identifier",CString(objects[i].getFullName().c_str()));
+                  setExprArgs[0] = op.GetFullName()+L".frame";
+                  Application().ExecuteCommand(L"SetExpr",setExprArgs,setExprReturn);
+               }
+            }
+         }
       }
    }
 

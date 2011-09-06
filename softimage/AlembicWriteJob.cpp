@@ -28,7 +28,6 @@ AlembicWriteJob::AlembicWriteJob
    const CDoubleArray & in_Frames
 )
 {
-   mArchive = NULL;
    mFileName = in_FileName;
    mSelection = in_Selection;
 
@@ -38,8 +37,6 @@ AlembicWriteJob::AlembicWriteJob
 
 AlembicWriteJob::~AlembicWriteJob()
 {
-   if(mArchive != NULL)
-      delete(mArchive);
 }
 
 CStatus AlembicWriteJob::Process()
@@ -65,13 +62,14 @@ CStatus AlembicWriteJob::Process()
       return CStatus::InvalidArgument;
    }
 
-   // init archive
-   mArchive = new Alembic::Abc::OArchive(CreateArchiveWithInfo(
-      Alembic::AbcCoreHDF5::WriteArchive(),
-      mFileName.GetAsciiString(),
-      "Softimage Alembic Plugin",
-      "Fabric Engine User",
-      Alembic::Abc::ErrorHandler::kThrowPolicy));
+   // init archive (use a locally scoped archive)
+   CString sceneFileName = L"Exported from: "+Application().GetActiveProject().GetActiveScene().GetParameterValue(L"FileName").GetAsText();
+   mArchive = CreateArchiveWithInfo(
+         Alembic::AbcCoreHDF5::WriteArchive(),
+         mFileName.GetAsciiString(),
+         "Softimage Alembic Plugin",
+         sceneFileName.GetAsciiString(),
+         Alembic::Abc::ErrorHandler::kThrowPolicy);
 
    // get the frame rate
    double frameRate = 25.0;
@@ -86,22 +84,26 @@ CStatus AlembicWriteJob::Process()
 
    // create the sampling
    AbcA::TimeSampling sampling(timePerSample,0.0);
-   mTs = mArchive->addTimeSampling(sampling);
+   mTs = mArchive.addTimeSampling(sampling);
+
+   Alembic::Abc::OBox3dProperty boxProp = Alembic::AbcGeom::CreateOArchiveBounds(mArchive,mTs);
 
    // create object for each
-   std::vector<AlembicObject*> objects;
+   std::vector<AlembicObjectPtr> objects;
    for(LONG i=0;i<mSelection.GetCount();i++)
    {
       X3DObject xObj(mSelection[i]);
       if(xObj.GetType().IsEqualNoCase(L"camera"))
       {
-         objects.push_back(new AlembicXform(xObj.GetKinematics().GetGlobal().GetRef(),this));
-         objects.push_back(new AlembicCamera(xObj.GetActivePrimitive().GetRef(),this,objects.back()->GetObject()));
+         AlembicObjectPtr ptr;
+         ptr.reset(new AlembicCamera(xObj.GetActivePrimitive().GetRef(),this));
+         objects.push_back(ptr);
       }
       else if(xObj.GetType().IsEqualNoCase(L"polymsh"))
       {
-         objects.push_back(new AlembicXform(xObj.GetKinematics().GetGlobal().GetRef(),this));
-         objects.push_back(new AlembicPolyMesh(xObj.GetActivePrimitive().GetRef(),this,objects.back()->GetObject()));
+         AlembicObjectPtr ptr;
+         ptr.reset(new AlembicPolyMesh(xObj.GetActivePrimitive().GetRef(),this));
+         objects.push_back(ptr);
       }
    }
 
@@ -115,8 +117,8 @@ CStatus AlembicWriteJob::Process()
       }
    }
 
-   for(size_t i=0;i<objects.size();i++)
-      delete(objects[i]);
+   //for(size_t i=0;i<objects.size();i++)
+   //   delete(objects[i]);
 
    return CStatus::OK;
 }
