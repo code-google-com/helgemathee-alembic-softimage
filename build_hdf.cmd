@@ -47,7 +47,7 @@ set pthread_flags=%pthread_flags%
 
 @echo on
 pushd %outDir%
-cmake -G %Generator% -D BUILD_SHARED_LIBS=OFF -D HDF5_BUILD_HL_LIB:BOOL=ON %pthread_flags% %cmake_flags% %ALEMBIC_ROOT%\thirdparty\hdf5-1.8.7
+cmake -G %Generator% -D BUILD_SHARED_LIBS=OFF -D HDF5_BUILD_HL_LIB:BOOL=ON -D HDF5_BUILD_TOOLS=ON %pthread_flags% %cmake_flags% %ALEMBIC_ROOT%\thirdparty\hdf5-1.8.7
 vcbuild /nologo %1 %2 %3 %4 %5 %6 HDF5.sln "%config%|%arch%"
 
 if not exist %targetLibDir% md %targetLibDir%
