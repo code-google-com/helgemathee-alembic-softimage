@@ -1,4 +1,6 @@
 #include "AlembicCamera.h"
+#include "AlembicXform.h"
+
 #include <xsi_application.h>
 #include <xsi_x3dobject.h>
 #include <xsi_primitive.h>
@@ -10,6 +12,8 @@
 #include <xsi_ppglayout.h>
 #include <xsi_ppgitem.h>
 #include <xsi_math.h>
+#include <xsi_kinematics.h>
+#include <xsi_kinematicstate.h>
 
 using namespace XSI;
 using namespace MATH;
@@ -17,12 +21,17 @@ using namespace MATH;
 namespace AbcA = ::Alembic::AbcCoreAbstract::ALEMBIC_VERSION_NS;
 using namespace AbcA;
 
-AlembicCamera::AlembicCamera(const XSI::CRef & in_Ref, AlembicWriteJob * in_Job, Alembic::Abc::OObject in_Parent)
-: AlembicObject(in_Ref, in_Job, in_Parent)
+AlembicCamera::AlembicCamera(const XSI::CRef & in_Ref, AlembicWriteJob * in_Job)
+: AlembicObject(in_Ref, in_Job)
 {
    Primitive prim(GetRef());
-   CString name(prim.GetParent3DObject().GetName()+L"Shape");
-   mObject = Alembic::AbcGeom::OCamera(GetParent(),name.GetAsciiString(),GetJob()->GetAnimatedTs());
+   CString xformName(prim.GetParent3DObject().GetName());
+   CString cameraName(xformName+L"Shape");
+   Alembic::AbcGeom::OXform xform(in_Job->GetArchive().getTop(),xformName.GetAsciiString(),GetJob()->GetAnimatedTs());
+   Alembic::AbcGeom::OCamera camera(xform,cameraName.GetAsciiString(),GetJob()->GetAnimatedTs());
+
+   mXformSchema = xform.getSchema();
+   mCameraSchema = camera.getSchema();
 }
 
 XSI::CStatus AlembicCamera::Save(double time)
@@ -30,12 +39,14 @@ XSI::CStatus AlembicCamera::Save(double time)
    // access the camera
    Primitive prim(GetRef());
 
+   // store the transform
+   SaveXformSample(prim.GetParent3DObject().GetKinematics().GetGlobal().GetRef(),mXformSchema,mXformSample,time);
+
    // store the camera data
-   Alembic::AbcGeom::CameraSample sample;
-   sample.setFocalLength(prim.GetParameterValue(L"projplanedist",time));
+   mCameraSample.setFocalLength(prim.GetParameterValue(L"projplanedist",time));
 
    // save the samples
-   mObject.getSchema().set(sample);
+   mCameraSchema.set(mCameraSample);
 
    return CStatus::OK;
 }

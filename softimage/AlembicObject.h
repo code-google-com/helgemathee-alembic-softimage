@@ -12,19 +12,18 @@ class AlembicObject
 private:
    XSI::CRef mRef;
    AlembicWriteJob * mJob;
-   Alembic::Abc::OObject mParent;
 
 public:
-   AlembicObject(const XSI::CRef & in_Ref, AlembicWriteJob * in_Job, Alembic::Abc::OObject in_Parent = Alembic::Abc::OObject());
+   AlembicObject(const XSI::CRef & in_Ref, AlembicWriteJob * in_Job);
    ~AlembicObject();
 
    AlembicWriteJob * GetJob() { return mJob; }
    const XSI::CRef & GetRef() { return mRef; }
-   Alembic::Abc::OObject GetParent() { return mParent; }
 
-   virtual const Alembic::Abc::OObject & GetObject() = 0;
    virtual XSI::CStatus Save(double time) = 0;
 };
+
+typedef boost::shared_ptr < AlembicObject > AlembicObjectPtr;
 
 #include "AlembicWriteJob.h"
 

@@ -18,20 +18,9 @@ using namespace MATH;
 namespace AbcA = ::Alembic::AbcCoreAbstract::ALEMBIC_VERSION_NS;
 using namespace AbcA;
 
-AlembicXform::AlembicXform(const XSI::CRef & in_Ref, AlembicWriteJob * in_Job, Alembic::Abc::OObject in_Parent)
-: AlembicObject(in_Ref, in_Job, in_Parent)
+void SaveXformSample(XSI::CRef kinestateRef, Alembic::AbcGeom::OXformSchema & schema, Alembic::AbcGeom::XformSample & sample, double time)
 {
-   KinematicState kineState(GetRef());
-   CString name(kineState.GetParent3DObject().GetName());
-   mObject = Alembic::AbcGeom::OXform(GetParent(),name.GetAsciiString(),GetJob()->GetAnimatedTs());
-}
-
-XSI::CStatus AlembicXform::Save(double time)
-{
-   // access the transform
-   CTransformation global = KinematicState(GetRef()).GetTransform(time);
-
-   Alembic::AbcGeom::XformSample sample;
+   CTransformation global = KinematicState(kinestateRef).GetTransform(time);
 
    // store the transform
    CVector3 trans = global.GetTranslation();
@@ -43,9 +32,7 @@ XSI::CStatus AlembicXform::Save(double time)
    sample.setScale(Imath::V3d(scale.GetX(),scale.GetY(),scale.GetZ()));
 
    // save the sample
-   mObject.getSchema().set(sample);
-
-   return CStatus::OK;
+   schema.set(sample);
 }
 
 XSIPLUGINCALLBACK CStatus alembic_xform_Define( CRef& in_ctxt )

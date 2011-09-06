@@ -6,12 +6,15 @@
 class AlembicPolyMesh: public AlembicObject
 {
 private:
-   Alembic::AbcGeom::OPolyMesh mObject;
+   Alembic::AbcGeom::OXformSchema mXformSchema;
+   Alembic::AbcGeom::OPolyMeshSchema mMeshSchema;
+   Alembic::AbcGeom::XformSample mXformSample;
+   Alembic::AbcGeom::OPolyMeshSchema::Sample mMeshSample;
+   int mNumSamples;
 public:
 
-   AlembicPolyMesh(const XSI::CRef & in_Ref, AlembicWriteJob * in_Job, Alembic::Abc::OObject in_Parent = Alembic::Abc::OObject());
+   AlembicPolyMesh(const XSI::CRef & in_Ref, AlembicWriteJob * in_Job);
 
-   virtual const Alembic::Abc::OObject & GetObject() { return mObject; }
    virtual XSI::CStatus Save(double time);
 };
 
