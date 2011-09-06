@@ -44,6 +44,7 @@ SICALLBACK XSILoadPlugin( PluginRegistrar& in_reg )
 	in_reg.RegisterOperator(L"alembic_camera");
 	in_reg.RegisterOperator(L"alembic_polymesh");
 	in_reg.RegisterOperator(L"alembic_normals");
+	in_reg.RegisterOperator(L"alembic_uvs");
 	in_reg.RegisterMenu(siMenuMainFileExportID,L"alembic_MenuExport",false,false);
 	in_reg.RegisterMenu(siMenuMainFileImportID,L"alembic_MenuImport",false,false);
 	//RegistrationInsertionPoint - do not remove this line
@@ -355,6 +356,53 @@ SICALLBACK alembic_import_Execute( CRef& in_ctxt )
                   op.PutParameterValue(L"identifier",CString(objects[i].getFullName().c_str()));
                   setExprArgs[0] = op.GetFullName()+L".frame";
                   Application().ExecuteCommand(L"SetExpr",setExprArgs,setExprReturn);
+               }
+            }
+         }
+         // let's setup the normals op
+         Alembic::AbcGeom::IV2fGeomParam meshUVsParam = meshSchema.getUVsParam();
+         if(meshUVsParam.valid())
+         {
+            Alembic::Abc::V2fArraySamplePtr meshUVs = meshUVsParam.getExpandedValue(0).getVals();
+            if(meshUVs->size() > 0)
+            {
+               // create user normals
+               CValueArray createProjectionArgs(3);
+               createProjectionArgs[0] = meshObj.GetFullName();
+               createProjectionArgs[1] = siTxtSpatial;
+               createProjectionArgs[2] = siTxtDefaultPlanarXY;
+               Application().ExecuteCommand(L"CreateProjection",createProjectionArgs,setExprReturn);
+               ClusterProperty uvProp;
+               CRefArray clusters = meshObj.GetActivePrimitive().GetGeometry().GetClusters();
+               for(LONG j=0;j<clusters.GetCount();j++)
+               {
+                  Cluster cluster(clusters[j]);
+                  if(!cluster.GetType().IsEqualNoCase(L"sample"))
+                     continue;
+                  CRefArray props(cluster.GetLocalProperties());
+                  for(LONG k=0;k<props.GetCount();k++)
+                  {
+                     ClusterProperty prop(props[k]);
+                     if(prop.GetType().IsEqualNoCase(L"uvspace"))
+                     {
+                        uvProp = props[k];
+                        break;
+                     }
+                  }
+                  if(uvProp.IsValid())
+                     break;
+               }
+               if(uvProp.IsValid())
+               {
+                  // we found it, and we need to attach the op
+                  CustomOperator op = Application().GetFactory().CreateObject(L"alembic_uvs");
+                  op.AddOutputPort(uvProp.GetRef());
+                  op.AddInputPort(uvProp.GetRef());
+                  op.Connect();
+                  ops.Add(op.GetRef());
+                  op.PutParameterValue(L"path",filename);
+                  op.PutParameterValue(L"identifier",CString(objects[i].getFullName().c_str()));
+                  // we don't put an expression, since UVs typically don't animate
                }
             }
          }

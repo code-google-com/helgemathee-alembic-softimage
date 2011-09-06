@@ -20,6 +20,7 @@
 #include <xsi_kinematics.h>
 #include <xsi_kinematicstate.h>
 #include <xsi_clusterproperty.h>
+#include <xsi_cluster.h>
 
 using namespace XSI;
 using namespace MATH;
@@ -50,6 +51,7 @@ XSI::CStatus AlembicPolyMesh::Save(double time)
    // access the mesh
    PolygonMesh mesh = prim.GetGeometry(time);
    CVector3Array pos = mesh.GetVertices().GetPositionArray();
+   CVector3Array normals = mesh.GetVertices().GetNormalArray();
    CPolygonFaceRefArray faces = mesh.GetPolygons();
    LONG vertCount = pos.GetCount();
    LONG faceCount = faces.GetCount();
@@ -65,22 +67,27 @@ XSI::CStatus AlembicPolyMesh::Save(double time)
    }
 
    LONG offset = 0;
-   std::vector<Alembic::Abc::V3f> normalVec(sampleCount);
+   std::vector<Alembic::Abc::N3f> normalVec(sampleCount);
    for(LONG i=0;i<faceCount;i++)
    {
       PolygonFace face(faces[i]);
-      CVector3Array normals = face.GetVertices().GetNormalArray();
-      for(LONG j=0;j<normals.GetCount();j++)
+      CLongArray normalIndices = face.GetVertices().GetIndexArray();
+      for(LONG j=0;j<normalIndices.GetCount();j++)
       {
-         normalVec[offset].x = (float)normals[j].GetX();
-         normalVec[offset].y = (float)normals[j].GetY();
-         normalVec[offset++].z = (float)normals[j].GetZ();
+         normalVec[offset].x = (float)normals[normalIndices[j]].GetX();
+         normalVec[offset].y = (float)normals[normalIndices[j]].GetY();
+         normalVec[offset++].z = (float)normals[normalIndices[j]].GetZ();
+
+#ifdef _DEBUG
+         if(i==0 && j==0 && mNumSamples == 0)
+            Application().LogMessage(L"first normal: "+CString(normals[normalIndices[j]].GetX())+L" : "+CString(normals[normalIndices[j]].GetY())+L" : "+CString(normals[normalIndices[j]].GetZ()));
+#endif
       }
    }
 
    // allocate for the points and normals
    Alembic::Abc::P3fArraySample posSample(&posVec.front(),posVec.size());
-   //Alembic::AbcGeom::ON3fGeomParam::Sample normalSample(Alembic::Abc::N3fArraySample(&normalVec.front(),normalVec.size()),Alembic::AbcGeom::kFacevaryingScope);
+   Alembic::AbcGeom::ON3fGeomParam::Sample normalSample(Alembic::Abc::N3fArraySample(&normalVec.front(),normalVec.size()),Alembic::AbcGeom::kFacevaryingScope);
 
    // if we are the first frame!
    if(mNumSamples == 0)
@@ -106,20 +113,57 @@ XSI::CStatus AlembicPolyMesh::Save(double time)
       Alembic::Abc::Int32ArraySample faceIndicesSample(&faceIndicesVec.front(),faceIndicesVec.size());
 
       mMeshSample.setPositions(posSample);
-      //mMeshSample.setNormals(normalSample);
+      mMeshSample.setNormals(normalSample);
       mMeshSample.setFaceCounts(faceCountSample);
       mMeshSample.setFaceIndices(faceIndicesSample);
 
       // also check if we need to store UV
-
+      CRefArray clusters = mesh.GetClusters();
+      CRef uvPropRef;
+      for(LONG i=0;i<clusters.GetCount();i++)
+      {
+         Cluster cluster(clusters[i]);
+         if(!cluster.GetType().IsEqualNoCase(L"sample"))
+            continue;
+         CRefArray props(cluster.GetLocalProperties());
+         for(LONG k=0;k<props.GetCount();k++)
+         {
+            ClusterProperty prop(props[k]);
+            if(prop.GetType().IsEqualNoCase(L"uvspace"))
+            {
+               uvPropRef = props[k];
+               break;
+            }
+         }
+         if(uvPropRef.IsValid())
+            break;
+      }
+      if(uvPropRef.IsValid())
+      {
+         // ok, great, we found UVs, let's set them up
+         CDoubleArray uvValues = ClusterProperty(uvPropRef).GetElements().GetArray();
+         std::vector<Alembic::Abc::V2f> uvVec(sampleCount);
+         LONG offset = 0;
+         for(LONG i=0;i<sampleCount;i++,offset+=3)
+         {
+            uvVec[i].x = (float)uvValues[offset];
+            uvVec[i].y = (float)uvValues[offset+1];
+#ifdef _DEBUG
+            if(i==0)
+               Application().LogMessage(L"first uvs: "+CString(uvVec[i].x)+L" : "+CString(uvVec[i].y));
+#endif
+         }
+         Alembic::AbcGeom::OV2fGeomParam::Sample uvSample(Alembic::Abc::V2fArraySample(&uvVec.front(),uvVec.size()),Alembic::AbcGeom::kFacevaryingScope);
+         mMeshSample.setUVs(uvSample);
+      }
 
       mMeshSchema.set(mMeshSample);
    }
    else
    {
       mMeshSample.setPositions(posSample);
+      mMeshSample.setNormals(normalSample);
       mMeshSchema.set(mMeshSample);
-      //mMeshSample.setNormals(normalSample);
    }
    mNumSamples++;
 
@@ -261,13 +305,17 @@ XSIPLUGINCALLBACK CStatus alembic_normals_Update( CRef& in_ctxt )
    Alembic::AbcGeom::IN3fGeomParam meshNormalsParam = obj.getSchema().getNormalsParam();
    if(meshNormalsParam.valid())
    {
-      Alembic::Abc::N3fArraySamplePtr meshNormals = meshNormalsParam.getExpandedValue(0).getVals();
+      Alembic::Abc::N3fArraySamplePtr meshNormals = meshNormalsParam.getExpandedValue(sampleIndex).getVals();
       if(meshNormals->size() * 3 == normalValues.GetCount())
       {
          // let's apply it!
          LONG offset = 0;
          for(size_t i=0;i<meshNormals->size();i++)
          {
+#ifdef _DEBUG
+            if(i == 0)
+               Application().LogMessage(L"first normals: "+CString(meshNormals->get()[i].x)+L" : "+CString(meshNormals->get()[i].y)+L" : "+CString(meshNormals->get()[i].z));
+#endif
             normalValues[offset++] = meshNormals->get()[i].x;
             normalValues[offset++] = meshNormals->get()[i].y;
             normalValues[offset++] = meshNormals->get()[i].z;
@@ -276,6 +324,91 @@ XSIPLUGINCALLBACK CStatus alembic_normals_Update( CRef& in_ctxt )
    }
 
    ClusterProperty(ctxt.GetOutputTarget()).GetElements().PutArray(normalValues);
+
+   return CStatus::OK;
+}
+
+XSIPLUGINCALLBACK CStatus alembic_uvs_Define( CRef& in_ctxt )
+{
+   Context ctxt( in_ctxt );
+   CustomOperator oCustomOperator;
+
+   Parameter oParam;
+   CRef oPDef;
+
+   Factory oFactory = Application().GetFactory();
+   oCustomOperator = ctxt.GetSource();
+
+   oPDef = oFactory.CreateParamDef(L"frame",CValue::siInt4,siAnimatable | siPersistable,L"frame",L"frame",1,-100000,100000,0,1);
+   oCustomOperator.AddParameter(oPDef,oParam);
+   oPDef = oFactory.CreateParamDef(L"path",CValue::siString,siReadOnly | siPersistable,L"path",L"path",L"",L"",L"",L"",L"");
+   oCustomOperator.AddParameter(oPDef,oParam);
+   oPDef = oFactory.CreateParamDef(L"identifier",CValue::siString,siReadOnly | siPersistable,L"identifier",L"identifier",L"",L"",L"",L"",L"");
+   oCustomOperator.AddParameter(oPDef,oParam);
+
+   oCustomOperator.PutAlwaysEvaluate(false);
+   oCustomOperator.PutDebug(0);
+
+   return CStatus::OK;
+
+}
+
+XSIPLUGINCALLBACK CStatus alembic_uvs_DefineLayout( CRef& in_ctxt )
+{
+   Context ctxt( in_ctxt );
+   PPGLayout oLayout;
+   PPGItem oItem;
+   oLayout = ctxt.GetSource();
+   oLayout.Clear();
+   return CStatus::OK;
+}
+
+
+XSIPLUGINCALLBACK CStatus alembic_uvs_Update( CRef& in_ctxt )
+{
+   OperatorContext ctxt( in_ctxt );
+
+   CString path = ctxt.GetParameterValue(L"path");
+   CString identifier = ctxt.GetParameterValue(L"identifier");
+   Alembic::AbcCoreAbstract::index_t sampleIndex = (Alembic::AbcCoreAbstract::index_t)int(ctxt.GetParameterValue(L"frame"))-1;
+
+   Alembic::AbcGeom::IPolyMesh obj(getObjectFromArchive(path,identifier),Alembic::Abc::kWrapExisting);
+   if(!obj.valid())
+      return CStatus::OK;
+
+   // clamp the sample
+   if(sampleIndex < 0)
+      sampleIndex = 0;
+   else if(sampleIndex >= (Alembic::AbcCoreAbstract::index_t)obj.getSchema().getNumSamples())
+      sampleIndex = int(obj.getSchema().getNumSamples()) - 1;
+
+   Alembic::AbcGeom::IPolyMeshSchema::Sample sample;
+   obj.getSchema().get(sample,sampleIndex);
+
+   CDoubleArray uvValues = ClusterProperty((CRef)ctxt.GetInputValue(0)).GetElements().GetArray();
+
+   Alembic::AbcGeom::IV2fGeomParam meshUvParam = obj.getSchema().getUVsParam();
+   if(meshUvParam.valid())
+   {
+      Alembic::Abc::V2fArraySamplePtr meshUVs = meshUvParam.getExpandedValue(sampleIndex).getVals();
+      if(meshUVs->size() * 3 == uvValues.GetCount())
+      {
+         // let's apply it!
+         LONG offset = 0;
+         for(size_t i=0;i<meshUVs->size();i++)
+         {
+#ifdef _DEBUG
+            if(i == 0)
+               Application().LogMessage(L"first uvs: "+CString(meshUVs->get()[i].x)+L" : "+CString(meshUVs->get()[i].y));
+#endif
+            uvValues[offset++] = meshUVs->get()[i].x;
+            uvValues[offset++] = meshUVs->get()[i].y;
+            uvValues[offset++] = 0.0;
+         }
+      }
+   }
+
+   ClusterProperty(ctxt.GetOutputTarget()).GetElements().PutArray(uvValues);
 
    return CStatus::OK;
 }
