@@ -90,7 +90,7 @@ SICALLBACK alembic_export_Execute( CRef& in_ctxt )
          toolkit.CreateInstance(L"XSI.UIToolkit");
          CComAPIHandler filebrowser(toolkit.GetProperty(L"FileBrowser"));
          filebrowser.PutProperty(L"InitialDirectory",Application().GetActiveProject().GetPath());
-         filebrowser.PutProperty(L"Filter",L"Alembic Files(*.abc)|*.abc|");
+         filebrowser.PutProperty(L"Filter",L"Alembic Files(*.abc)|*.abc||");
          CValue returnVal;
          filebrowser.Call(L"ShowSave",returnVal);
          filename = filebrowser.GetProperty(L"FilePathName").GetAsText();
@@ -163,7 +163,7 @@ SICALLBACK alembic_import_Execute( CRef& in_ctxt )
          toolkit.CreateInstance(L"XSI.UIToolkit");
          CComAPIHandler filebrowser(toolkit.GetProperty(L"FileBrowser"));
          filebrowser.PutProperty(L"InitialDirectory",Application().GetActiveProject().GetPath());
-         filebrowser.PutProperty(L"Filter",L"Alembic Files(*.abc)|*.abc|");
+         filebrowser.PutProperty(L"Filter",L"Alembic Files(*.abc)|*.abc||");
          CValue returnVal;
          filebrowser.Call(L"ShowOpen",returnVal);
          filename = filebrowser.GetProperty(L"FilePathName").GetAsText();
