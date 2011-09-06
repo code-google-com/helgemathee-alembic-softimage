@@ -13,6 +13,7 @@ private:
     std::vector<double> mFrames;
     Alembic::Abc::OArchive mArchive;
     unsigned int mTs;
+    std::map<XSI::CString,XSI::CValue> mOptions;
 public:
    AlembicWriteJob(
       const XSI::CString & in_FileName,
@@ -24,6 +25,9 @@ public:
    const std::vector<double> & GetFrames() { return mFrames; }
    const XSI::CString & GetFileName() { return mFileName; }
    unsigned int GetAnimatedTs() { return mTs; }
+   void SetOption(const XSI::CString & in_Name, const XSI::CValue & in_Value);
+   bool HasOption(const XSI::CString & in_Name);
+   XSI::CValue GetOption(const XSI::CString & in_Name);
  
    XSI::CStatus Process();
 };
