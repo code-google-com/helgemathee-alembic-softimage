@@ -14,6 +14,8 @@
 #include <xsi_primitive.h>
 #include <xsi_kinematics.h>
 #include <xsi_kinematicstate.h>
+#include <xsi_uitoolkit.h>
+#include <xsi_progressbar.h>
 
 using namespace XSI;
 using namespace MATH;
@@ -130,18 +132,31 @@ CStatus AlembicWriteJob::Process()
       }
    }
 
+   ProgressBar prog;
+   prog = Application().GetUIToolkit().GetProgressBar();
+   prog.PutMinimum(0);
+   prog.PutMaximum((LONG)(mFrames.size() * objects.size()));
+   prog.PutValue(0);
+   prog.PutCancelEnabled(true);
+   prog.PutVisible(true);
+
    for(unsigned int frame=0; frame < (unsigned int)mFrames.size(); frame++)
    {
       for(size_t i=0;i<objects.size();i++)
       {
+         prog.PutCaption(L"Frame "+CString(mFrames[frame])+L" of "+objects[i]->GetRef().GetAsText());
          CStatus status = objects[i]->Save(mFrames[frame]);
          if(status != CStatus::OK)
-            return status; 
+            return status;
+         if(prog.IsCancelPressed())
+            break;
+         prog.Increment();
       }
+      if(prog.IsCancelPressed())
+         break;
    }
 
-   //for(size_t i=0;i<objects.size();i++)
-   //   delete(objects[i]);
+   prog.PutVisible(false);
 
    return CStatus::OK;
 }

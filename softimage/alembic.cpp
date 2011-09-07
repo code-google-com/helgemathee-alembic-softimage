@@ -146,7 +146,10 @@ SICALLBACK alembic_export_Execute( CRef& in_ctxt )
    job.SetOption(L"exportUVs",(bool)args[7]);
 
    // run the job
-	return job.Process();
+   deleteAllArchives();
+	CStatus result = job.Process();
+   deleteAllArchives();
+   return result;
 }
 
 SICALLBACK alembic_import_Init( CRef& in_ctxt )
