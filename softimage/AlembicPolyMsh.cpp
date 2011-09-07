@@ -21,6 +21,7 @@
 #include <xsi_kinematicstate.h>
 #include <xsi_clusterproperty.h>
 #include <xsi_cluster.h>
+#include <xsi_geometryaccessor.h>
 
 using namespace XSI;
 using namespace MATH;
@@ -82,7 +83,14 @@ XSI::CStatus AlembicPolyMesh::Save(double time)
       }
       else
       {
-         normalVec.resize(sampleCount);
+         CGeometryAccessor accessor = mesh.GetGeometryAccessor(siConstructionModeSecondaryShape);
+         CFloatArray shadingNormals;
+         accessor.GetNodeNormals(shadingNormals);
+         normalVec.resize(shadingNormals.GetCount() / 3);
+         // use memcpy since it is faster
+         memcpy(&normalVec.front(),shadingNormals.GetArray(),sizeof(float) * shadingNormals.GetCount());
+
+         /*
          for(LONG i=0;i<faceCount;i++)
          {
             PolygonFace face(faces[i]);
@@ -99,6 +107,7 @@ XSI::CStatus AlembicPolyMesh::Save(double time)
 #endif
             }
          }
+         */
       }
    }
 
