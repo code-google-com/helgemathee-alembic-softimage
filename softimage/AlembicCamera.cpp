@@ -44,6 +44,10 @@ XSI::CStatus AlembicCamera::Save(double time)
 
    // store the camera data
    mCameraSample.setFocalLength(prim.GetParameterValue(L"projplanedist",time));
+   mCameraSample.setVerticalAperture(prim.GetParameterValue(L"projplaneheight",time));
+   mCameraSample.setNearClippingPlane(prim.GetParameterValue(L"near",time));
+   mCameraSample.setFarClippingPlane(prim.GetParameterValue(L"far",time));
+   mCameraSample.setLensSqueezeRatio(prim.GetParameterValue(L"aspect",time));
 
    // save the samples
    mCameraSchema.set(mCameraSample);
@@ -109,7 +113,14 @@ XSIPLUGINCALLBACK CStatus alembic_camera_Update( CRef& in_ctxt )
    obj.getSchema().get(sample,sampleIndex);
 
    Primitive prim(ctxt.GetOutputTarget());
+   prim.PutParameterValue(L"std",0l);
+   prim.PutParameterValue(L"aspect",sample.getLensSqueezeRatio());
+   prim.PutParameterValue(L"projplane",true);
    prim.PutParameterValue(L"projplanedist",sample.getFocalLength());
+   prim.PutParameterValue(L"projplaneheight",sample.getVerticalAperture());
+   prim.PutParameterValue(L"near",sample.getNearClippingPlane());
+   prim.PutParameterValue(L"far",sample.getFarClippingPlane());
+   prim.PutParameterValue(L"far",sample.getFarClippingPlane());
 
    return CStatus::OK;
 }

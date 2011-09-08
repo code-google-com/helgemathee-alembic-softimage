@@ -88,6 +88,26 @@ XSI::CStatus AlembicPolyMesh::Save(double time)
          CFloatArray shadingNormals;
          accessor.GetNodeNormals(shadingNormals);
          normalVec.resize(shadingNormals.GetCount() / 3);
+
+         /*
+         // we need to loop the faces, there is nothing we can do
+         LONG offset = 0;
+         for(LONG i=0;i<faces.GetCount();i++)
+         {
+            PolygonFace face(faces[i]);
+            CLongArray samples = face.GetSamples().GetIndexArray();
+            for(LONG j=samples.GetCount()-1;j>=0;j--)
+            {
+               LONG sampleIndex = samples[j];
+               normalVec[sampleIndex].x = (float)shadingNormals[offset++];
+               normalVec[sampleIndex].y = (float)shadingNormals[offset++];
+               normalVec[sampleIndex].z = (float)shadingNormals[offset++];
+               //normalVec[offset].x = shadingNormals[sampleIndex * 3];
+               //normalVec[offset].y = shadingNormals[sampleIndex * 3 + 1];
+               //normalVec[offset++].z = shadingNormals[sampleIndex * 3 + 2];
+            }
+         }
+         */
          memcpy(&normalVec.front(),shadingNormals.GetArray(),sizeof(float) * shadingNormals.GetCount());
       }
    }
@@ -124,9 +144,9 @@ XSI::CStatus AlembicPolyMesh::Save(double time)
       mMeshSample.setFaceIndices(faceIndicesSample);
 
       // also check if we need to store UV
+      CRefArray clusters = mesh.GetClusters();
       if((bool)GetJob()->GetOption(L"exportUVs"))
       {
-         CRefArray clusters = mesh.GetClusters();
          CRef uvPropRef;
          for(LONG i=0;i<clusters.GetCount();i++)
          {
@@ -151,14 +171,62 @@ XSI::CStatus AlembicPolyMesh::Save(double time)
             // ok, great, we found UVs, let's set them up
             uvVec.resize(sampleCount);
             CDoubleArray uvValues = ClusterProperty(uvPropRef).GetElements().GetArray();
+
+            /*
             LONG offset = 0;
-            for(LONG i=0;i<sampleCount;i++,offset+=3)
+            for(LONG i=0;i<faces.GetCount();i++)
             {
-               uvVec[i].x = (float)uvValues[offset];
-               uvVec[i].y = (float)uvValues[offset+1];
+               PolygonFace face(faces[i]);
+               CLongArray samples = face.GetSamples().GetIndexArray();
+               for(LONG j=samples.GetCount()-1;j>=0;j--)
+               {
+                  LONG sampleIndex = samples[j];
+                  uvVec[sampleIndex].x = (float)uvValues[offset++];
+                  uvVec[sampleIndex].y = (float)uvValues[offset++];
+                  offset++;
+                  //uvVec[offset].x = (float)uvValues[sampleIndex * 3];
+                  //uvVec[offset++].y = (float)uvValues[sampleIndex * 3 + 1];
+               }
             }
+            */
+
+            LONG offset = 0;
+            for(LONG i=0;i<sampleCount;i++)
+            {
+               uvVec[i].x = (float)uvValues[offset++];
+               uvVec[i].y = (float)uvValues[offset++];
+               offset++;
+            }
+
             Alembic::AbcGeom::OV2fGeomParam::Sample uvSample(Alembic::Abc::V2fArraySample(&uvVec.front(),uvVec.size()),Alembic::AbcGeom::kFacevaryingScope);
             mMeshSample.setUVs(uvSample);
+         }
+      }
+
+      // sweet, now let's have a look at face sets
+      std::vector<std::vector<int32_t>> faceSetVecs;
+      if(GetJob()->GetOption(L"exportFaceSets"))
+      {
+         for(LONG i=0;i<clusters.GetCount();i++)
+         {
+            Cluster cluster(clusters[i]);
+            if(!cluster.GetType().IsEqualNoCase(L"poly"))
+               continue;
+
+            CLongArray elements = cluster.GetElements().GetArray();
+            if(elements.GetCount() == 0)
+               continue;
+
+            std::string name(cluster.GetName().GetAsciiString());
+
+            faceSetVecs.push_back(std::vector<int32_t>());
+            std::vector<int32_t> & faceSetVec = faceSetVecs.back();
+            for(LONG j=0;j<elements.GetCount();j++)
+               faceSetVec.push_back(elements[j]);
+
+            Alembic::AbcGeom::OFaceSet faceSet = mMeshSchema.createFaceSet(name);
+            Alembic::AbcGeom::OFaceSetSchema::Sample faceSetSample(Alembic::Abc::Int32ArraySample(&faceSetVec.front(),faceSetVec.size()));
+            faceSet.getSchema().set(faceSetSample);
          }
       }
 
