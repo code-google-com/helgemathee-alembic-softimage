@@ -12,6 +12,7 @@
 #include <xsi_command.h>
 #include <xsi_menu.h>
 #include <xsi_uitoolkit.h>
+#include <xsi_progressbar.h>
 #include <xsi_comapihandler.h>
 #include <xsi_project.h>
 #include <xsi_selection.h>
@@ -27,6 +28,10 @@
 #include <xsi_clusterproperty.h>
 #include <xsi_primitive.h>
 #include <xsi_geometry.h>
+#include <xsi_polygonmesh.h>
+#include <xsi_ppglayout.h>
+#include <xsi_ppgitem.h>
+#include <xsi_ppgeventcontext.h>
 
 using namespace XSI; 
 using namespace MATH; 
@@ -47,6 +52,8 @@ SICALLBACK XSILoadPlugin( PluginRegistrar& in_reg )
 	in_reg.RegisterOperator(L"alembic_uvs");
 	in_reg.RegisterMenu(siMenuMainFileExportID,L"alembic_MenuExport",false,false);
 	in_reg.RegisterMenu(siMenuMainFileImportID,L"alembic_MenuImport",false,false);
+   in_reg.RegisterProperty(L"alembic_export_settings");
+   in_reg.RegisterProperty(L"alembic_import_settings");
 	//RegistrationInsertionPoint - do not remove this line
 
 	return CStatus::OK;
@@ -74,12 +81,13 @@ SICALLBACK alembic_export_Init( CRef& in_ctxt )
 	oArgs = oCmd.GetArguments();
 	oArgs.Add(L"filename");
 	oArgs.AddWithHandler(L"objects",L"Collection");
-	oArgs.Add(L"frameIn",1.0);
-	oArgs.Add(L"frameOut",100.0);
-	oArgs.Add(L"frameStep",1.0);
-	oArgs.Add(L"exportNormals",false);
-	oArgs.Add(L"vertexNormals",true);
-	oArgs.Add(L"exportUVs",false);
+	oArgs.Add(L"frameIn");
+	oArgs.Add(L"frameOut");
+	oArgs.Add(L"frameStep");
+	oArgs.Add(L"exportNormals");
+	oArgs.Add(L"vertexNormals");
+	oArgs.Add(L"exportUVs");
+	oArgs.Add(L"exportFaceSets");
 	return CStatus::OK;
 }
 
@@ -128,6 +136,65 @@ SICALLBACK alembic_export_Execute( CRef& in_ctxt )
    }
    Application().LogMessage(L"[alembic] objects used: "+CValue(objects.GetCount()).GetAsText());
 
+   // check if we have arguments
+   if(args[2].GetAsText().IsEmpty())
+   {
+      // let's setup the property
+      CustomProperty settings = Application().GetActiveSceneRoot().AddProperty(L"alembic_export_settings");
+
+      // inspect it
+      CValueArray inspectArgs(5);
+      CValue inspectResult;
+      inspectArgs[0] = settings.GetFullName();
+      inspectArgs[1] = L"";
+      inspectArgs[2] = L"Export Settings";
+      inspectArgs[3] = siModal;
+      inspectArgs[4] = false;
+      Application().ExecuteCommand(L"InspectObj",inspectArgs,inspectResult);
+      
+      // prepare for deletion
+      inspectArgs.Resize(1);
+      inspectArgs[0] = settings.GetFullName();
+      if((bool)inspectResult)
+      {
+         Application().ExecuteCommand(L"DeleteObj",inspectArgs,inspectResult);
+         return CStatus::Abort;
+      }
+
+      // retrieve the options
+      args[2] = settings.GetParameterValue(L"frame_in");
+      args[3] = settings.GetParameterValue(L"frame_out");
+      args[4] = settings.GetParameterValue(L"frame_step");
+      LONG normalMode = settings.GetParameterValue(L"normals");
+      switch(normalMode)
+      {
+         case 0:
+         {
+            args[5] = false;
+            args[6] = false;
+            args[7] = false;
+            break;
+         }
+         case 1:
+         {
+            args[5] = true;
+            args[6] = true;
+            args[7] = false;
+            break;
+         }
+         case 2:
+         {
+            args[5] = true;
+            args[6] = false;
+            args[7] = settings.GetParameterValue(L"uvs");
+            break;
+         }
+      }
+      args[8] = settings.GetParameterValue(L"facesets");
+
+      Application().ExecuteCommand(L"DeleteObj",inspectArgs,inspectResult);
+   }
+
    // check the frames
    double frameIn = (double)args[2];
    double frameOut = (double)args[3];
@@ -144,6 +211,7 @@ SICALLBACK alembic_export_Execute( CRef& in_ctxt )
    job.SetOption(L"exportNormals",(bool)args[5]);
    job.SetOption(L"vertexNormals",(bool)args[6]);
    job.SetOption(L"exportUVs",(bool)args[7]);
+   job.SetOption(L"exportFaceSets",(bool)args[8]);
 
    // run the job
    deleteAllArchives();
@@ -163,6 +231,9 @@ SICALLBACK alembic_import_Init( CRef& in_ctxt )
 	ArgumentArray oArgs;
 	oArgs = oCmd.GetArguments();
 	oArgs.Add(L"filename");
+   oArgs.Add(L"normals");
+   oArgs.Add(L"uvs");
+   oArgs.Add(L"clusters");
 	return CStatus::OK;
 }
 
@@ -197,6 +268,37 @@ SICALLBACK alembic_import_Execute( CRef& in_ctxt )
    }
    Application().LogMessage(L"[alembic] filename used: "+filename);
 
+   // check if we have arguments
+   if(args[1].GetAsText().IsEmpty())
+   {
+      // let's setup the property
+      CustomProperty settings = Application().GetActiveSceneRoot().AddProperty(L"alembic_import_settings");
+
+      // inspect it
+      CValueArray inspectArgs(5);
+      CValue inspectResult;
+      inspectArgs[0] = settings.GetFullName();
+      inspectArgs[1] = L"";
+      inspectArgs[2] = L"Import Settings";
+      inspectArgs[3] = siModal;
+      inspectArgs[4] = false;
+      Application().ExecuteCommand(L"InspectObj",inspectArgs,inspectResult);
+      
+      // prepare for deletion
+      inspectArgs.Resize(1);
+      inspectArgs[0] = settings.GetFullName();
+      if((bool)inspectResult)
+      {
+         Application().ExecuteCommand(L"DeleteObj",inspectArgs,inspectResult);
+         return CStatus::Abort;
+      }
+
+      // retrieve the options
+      args[1] = settings.GetParameterValue(L"normals");
+      args[2] = settings.GetParameterValue(L"uvs");
+      args[3] = settings.GetParameterValue(L"facesets");
+   }
+
    // let's try to read this
    Alembic::Abc::IArchive * archive = new Alembic::Abc::IArchive( Alembic::AbcCoreHDF5::ReadArchive(), filename.GetAsciiString() );
 
@@ -204,6 +306,10 @@ SICALLBACK alembic_import_Execute( CRef& in_ctxt )
    CValueArray setExprArgs(2);
    CValue setExprReturn;
    setExprArgs[1] = L"fc";
+
+   bool importNormals = (bool)args[1];
+   bool importUVs = (bool)args[2];
+   bool importClusters = (bool)args[3];
 
    // let's figure out which objects we have
    CRefArray ops;
@@ -214,6 +320,19 @@ SICALLBACK alembic_import_Execute( CRef& in_ctxt )
       // first, let's recurse
       for(size_t j=0;j<objects[i].getNumChildren();j++)
          objects.push_back(objects[i].getChild(j));
+   }
+
+   ProgressBar prog;
+   prog = Application().GetUIToolkit().GetProgressBar();
+   prog.PutMinimum(0);
+   prog.PutMaximum((LONG)objects.size());
+   prog.PutValue(0);
+   prog.PutCancelEnabled(true);
+   prog.PutVisible(true);
+
+   for(size_t i=0;i<objects.size();i++)
+   {
+      prog.PutCaption(L"Importing "+CString(objects[i].getFullName().c_str())+L" ...");
 
       // now let's see what we have here
       if(Alembic::AbcGeom::ICamera::matches(objects[i].getMetaData()))
@@ -223,11 +342,14 @@ SICALLBACK alembic_import_Execute( CRef& in_ctxt )
          if(Alembic::AbcGeom::IXform::matches(parent.getMetaData()))
             name = parent.getName();
 
-         Alembic::AbcGeom::ICamera meshIObject(objects[i],Alembic::Abc::kWrapExisting);
-
          // let's create a camera
          Camera camera;
          Application().GetActiveSceneRoot().AddCamera(L"Camera",name.c_str(),camera);
+
+         // delete the interest
+         CValueArray deleteArgs(1);
+         deleteArgs[0] = camera.GetInterest().GetFullName();
+         Application().ExecuteCommand(L"DeleteObj",deleteArgs,setExprReturn);
 
          // let's setup the xform op
          if(Alembic::AbcGeom::IXform::matches(parent.getMetaData()))
@@ -300,6 +422,25 @@ SICALLBACK alembic_import_Execute( CRef& in_ctxt )
 
          X3DObject meshObj;
          Application().GetActiveSceneRoot().AddPolygonMesh(pos,polies,name.c_str(),meshObj);
+         PolygonMesh meshGeo = meshObj.GetActivePrimitive().GetGeometry();
+
+         // check the face sets
+         if(importClusters)
+         {
+            std::vector<std::string> faceSetNames;
+            meshSchema.getFaceSetNames(faceSetNames);
+            for(size_t j=0;j<faceSetNames.size();j++)
+            {
+               Alembic::AbcGeom::IFaceSetSchema faceSet = meshSchema.getFaceSet(faceSetNames[j]).getSchema();
+               Alembic::AbcGeom::IFaceSetSchema::Sample faceSetSample = faceSet.getValue();
+               Alembic::Abc::Int32ArraySamplePtr faces = faceSetSample.getFaces();
+               CLongArray elements((LONG)faces->size());
+               for(size_t k=0;k<faces->size();k++)
+                  elements[(LONG)k] = (LONG)faces->get()[k];
+               Cluster cluster;
+               meshGeo.AddCluster(L"poly",CString(faceSetNames[j].c_str()),elements,cluster);
+            }
+         }
 
          // let's setup the xform op
          if(Alembic::AbcGeom::IXform::matches(parent.getMetaData()))
@@ -328,7 +469,7 @@ SICALLBACK alembic_import_Execute( CRef& in_ctxt )
 
          // let's setup the normals op
          Alembic::AbcGeom::IN3fGeomParam meshNormalsParam = meshSchema.getNormalsParam();
-         if(meshNormalsParam.valid())
+         if(meshNormalsParam.valid() && importNormals)
          {
             Alembic::Abc::N3fArraySamplePtr meshNormals = meshNormalsParam.getExpandedValue(0).getVals();
             if(meshNormals->size() > meshPos->size()) // don't do this for vertex normals
@@ -374,7 +515,7 @@ SICALLBACK alembic_import_Execute( CRef& in_ctxt )
          }
          // let's setup the normals op
          Alembic::AbcGeom::IV2fGeomParam meshUVsParam = meshSchema.getUVsParam();
-         if(meshUVsParam.valid())
+         if(meshUVsParam.valid() && importUVs)
          {
             Alembic::Abc::V2fArraySamplePtr meshUVs = meshUVsParam.getExpandedValue(0).getVals();
             if(meshUVs->size() > 0)
@@ -420,7 +561,13 @@ SICALLBACK alembic_import_Execute( CRef& in_ctxt )
             }
          }
       }
+
+      if(prog.IsCancelPressed())
+         break;
+      prog.Increment();
    }
+
+   prog.PutVisible(false);
 
    // check if we have any ops, if so let's set them up
    if(ops.GetCount() > 0)
@@ -451,3 +598,110 @@ SICALLBACK alembic_MenuImport_Init( CRef& in_ctxt )
 	return CStatus::OK;
 }
 
+SICALLBACK alembic_export_settings_Define( CRef& in_ctxt )
+{
+	Context ctxt( in_ctxt );
+	CustomProperty oCustomProperty;
+	Parameter oParam;
+	oCustomProperty = ctxt.GetSource();
+
+   // get the current frame in an out
+   CValueArray cmdArgs(1);
+   CValue cmdReturnVal;
+   cmdArgs[0] = L"PlayControl.In";
+   Application().ExecuteCommand(L"GetValue",cmdArgs,cmdReturnVal);
+   oCustomProperty.AddParameter(L"frame_in",CValue::siInt4,siPersistable,L"",L"",cmdReturnVal,-1000000,1000000,1,100,oParam);
+   cmdArgs[0] = L"PlayControl.Out";
+   Application().ExecuteCommand(L"GetValue",cmdArgs,cmdReturnVal);
+   oCustomProperty.AddParameter(L"frame_out",CValue::siInt4,siPersistable,L"",L"",cmdReturnVal,-1000000,1000000,1,100,oParam);
+   oCustomProperty.AddParameter(L"frame_step",CValue::siInt4,siPersistable,L"",L"",1,-1000000,1000000,1,5,oParam);
+
+	oCustomProperty.AddParameter(L"normals",CValue::siInt4,siPersistable,L"",L"",2,0,10,0,10,oParam);
+   oCustomProperty.AddParameter(L"uvs",CValue::siBool,siPersistable,L"",L"",1,0,1,0,1,oParam);
+   oCustomProperty.AddParameter(L"facesets",CValue::siBool,siPersistable,L"",L"",1,0,1,0,1,oParam);
+	return CStatus::OK;
+}
+
+SICALLBACK alembic_export_settings_DefineLayout( CRef& in_ctxt )
+{
+	Context ctxt( in_ctxt );
+	PPGLayout oLayout;
+	PPGItem oItem;
+	oLayout = ctxt.GetSource();
+	oLayout.Clear();
+
+   oLayout.AddGroup(L"Animation");
+   oLayout.AddItem(L"frame_in",L"In");
+   oLayout.AddItem(L"frame_out",L"Out");
+   oLayout.AddItem(L"frame_step",L"Step");
+   oLayout.EndGroup();
+
+   CValueArray normalItems(6);
+   oLayout.AddGroup(L"Geometry");
+   normalItems[0] = L"No Normals";
+   normalItems[1] = 0l;
+   normalItems[2] = L"Per Vertex Normals";
+   normalItems[3] = 1l;
+   normalItems[4] = L"Per Face Normals";
+   normalItems[5] = 2l;
+   oLayout.AddEnumControl(L"normals",normalItems,L"Normals");
+   oLayout.AddItem(L"uvs",L"UVs");
+   oLayout.AddItem(L"facesets",L"Clusters");
+   oLayout.EndGroup();
+
+	return CStatus::OK;
+}
+
+XSIPLUGINCALLBACK CStatus alembic_export_settings_PPGEvent( const CRef& in_ctxt )
+{
+	PPGEventContext ctxt( in_ctxt ) ;
+	if ( ctxt.GetEventID() == PPGEventContext::siParameterChange )
+	{
+		Parameter param = ctxt.GetSource() ;	
+		CString paramName = param.GetScriptName() ; 
+
+      // depending on what we changed
+      if(paramName.IsEqualNoCase(L"normals"))
+      {
+         Property(param.GetParent()).GetParameter(L"uvs").PutCapabilityFlag(siReadOnly,(LONG)param.GetValue() != 2l);
+      }
+	}
+   else if (ctxt.GetEventID() == PPGEventContext::siButtonClicked)
+   {
+      CString buttonName = ctxt.GetAttribute(L"Button");
+   }
+
+	return CStatus::OK ;
+}
+
+SICALLBACK alembic_import_settings_Define( CRef& in_ctxt )
+{
+	Context ctxt( in_ctxt );
+	CustomProperty oCustomProperty;
+	Parameter oParam;
+	oCustomProperty = ctxt.GetSource();
+
+   // get the current frame in an out
+	oCustomProperty.AddParameter(L"normals",CValue::siBool,siPersistable,L"",L"",0,0,1,0,1,oParam);
+   oCustomProperty.AddParameter(L"uvs",CValue::siBool,siPersistable,L"",L"",1,0,1,0,1,oParam);
+   oCustomProperty.AddParameter(L"facesets",CValue::siBool,siPersistable,L"",L"",1,0,1,0,1,oParam);
+	return CStatus::OK;
+}
+
+SICALLBACK alembic_import_settings_DefineLayout( CRef& in_ctxt )
+{
+	Context ctxt( in_ctxt );
+	PPGLayout oLayout;
+	PPGItem oItem;
+	oLayout = ctxt.GetSource();
+	oLayout.Clear();
+
+   CValueArray normalItems(6);
+   oLayout.AddGroup(L"Geometry");
+   oLayout.AddItem(L"normals",L"Normals");
+   oLayout.AddItem(L"uvs",L"UVs");
+   oLayout.AddItem(L"facesets",L"Clusters");
+   oLayout.EndGroup();
+
+	return CStatus::OK;
+}

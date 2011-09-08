@@ -15,8 +15,8 @@ if /i "%1" == "db:" (
 	shift
 ) ELSE (
 	set DB=
-	set config=RelWithDebInfo
-	set cmake_flags=-D CMAKE_CXX_FLAGS_RELWITHDEBINFO="/MT /Zi /O2 /Ob1 /D NDEBUG /EHsc" -D BUILD_SHARED_LIBS=ON
+	set config=Release
+	set cmake_flags=-D CMAKE_CXX_FLAGS_RELEASE="/MT /Zi /O2 /Ob1 /D NDEBUG /EHsc" -D BUILD_SHARED_LIBS=ON
 	set zlib_suffix=
 	set boost_suffix=s
 )
